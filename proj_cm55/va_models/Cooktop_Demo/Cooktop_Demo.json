@@ -1,0 +1,153 @@
+{
+    "projectName": "cooktop_demo",
+    "settings": {
+        "dict": "English-US",
+        "op_cond_db": 10,
+        "arm_core_id": "U55",
+        "nlu_timeout_ms": 0,
+        "nlu_sensitivity": 0,
+        "wwd_sensitivity": 0,
+        "nlu_pos_silence_ms": 300,
+        "nlu_pre_silence_ms": 0,
+        "wwd_pos_silence_ms": 0,
+        "wwd_pre_silence_ms": 200
+    },
+    "wakewords": [
+        {
+            "interjections": [
+                "Hey"
+            ],
+            "word": "Cook Top",
+            "phoneme": []
+        }
+    ],
+    "intents": [
+        {
+            "name": "SetPower",
+            "nodes": [
+                {
+                    "required": true,
+                    "value": {
+                        "type": "text",
+                        "phrases": [
+                            "power"
+                        ]
+                    }
+                },
+                {
+                    "required": true,
+                    "value": {
+                        "type": "variable",
+                        "name": "OnOff"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "SetHob",
+            "nodes": [
+                {
+                    "required": true,
+                    "value": {
+                        "type": "text",
+                        "phrases": [
+                            "Set hob"
+                        ]
+                    }
+                },
+                {
+                    "required": true,
+                    "value": {
+                        "type": "variable",
+                        "name": "Hob"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "OffMic",
+            "nodes": [
+                {
+                    "required": true,
+                    "value": {
+                        "type": "text",
+                        "phrases": [
+                            "turn",
+                            "switch",
+                            "power"
+                        ]
+                    }
+                },
+                {
+                    "required": true,
+                    "value": {
+                        "type": "text",
+                        "phrases": [
+                            "off microphone"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "SetTimer",
+            "nodes": [
+                {
+                    "required": true,
+                    "value": {
+                        "type": "text",
+                        "phrases": [
+                            "Set timer to"
+                        ]
+                    }
+                },
+                {
+                    "required": true,
+                    "value": {
+                        "type": "variable",
+                        "name": "Minutes"
+                    }
+                }
+            ]
+        }
+    ],
+    "variables": [
+        {
+            "name": "OnOff",
+            "type": "text",
+            "phrases": [
+                "on",
+                "off"
+            ],
+            "ranges": null,
+            "units": null
+        },
+        {
+            "name": "Hob",
+            "type": "integer",
+            "phrases": null,
+            "ranges": [
+                "10"
+            ],
+            "units": [
+                [
+                    ""
+                ]
+            ]
+        },
+        {
+            "name": "Minutes",
+            "type": "integer",
+            "phrases": null,
+            "ranges": [
+                "30"
+            ],
+            "units": [
+                [
+                    "minute",
+                    "minutes"
+                ]
+            ]
+        }
+    ]
+}

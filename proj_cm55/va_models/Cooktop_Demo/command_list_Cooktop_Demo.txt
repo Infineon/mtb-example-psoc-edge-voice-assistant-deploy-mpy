@@ -1,0 +1,7 @@
+power on
+power off <end-silence>
+Set hob <numbers10> {}
+turn off microphone
+switch off microphone
+power off microphone
+Set timer to <numbers30> {minute,minutes}
