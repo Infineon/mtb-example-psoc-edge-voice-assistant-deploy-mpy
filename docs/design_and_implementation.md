@@ -23,6 +23,8 @@ In the *main.c* file, you can set `#define RUNNING_MODE` to different modes:
 - **VA_MODE_WW_ONLY:** Only wake word detection is performed
 - **VA_MODE_CMD_ONLY:** Only command detection is performed
 
+If using **VA_MODE_WW_SINGLE_CMD** or **VA_MODE_WW_MULTI_CMD** modes, you can set a command timeout by defining the **CMD_TIMEOUT_SINGLE_CMD** and **CMD_TIMEOUT_MULTI_CMD**, respectively. These two DEFINES are placed in the *main.c*. By default, they are set to 5000 and 20000 milliseconds.
+
 The main application uses the kit's blue LED to indicate which state the Voice Assistant is running:
 - **LED is ON**: waiting for the user to say the wake word
 - **LED is breathing**: waiting for the user to say the command

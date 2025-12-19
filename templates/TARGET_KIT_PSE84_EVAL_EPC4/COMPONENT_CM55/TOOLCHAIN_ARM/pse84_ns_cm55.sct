@@ -118,6 +118,7 @@ LR_XIP_PORT0 (CYMEM_CM55_0_m55_nvm_sel_START + MCUBOOT_HEADER_SIZE) (CYMEM_CM55_
   /* A region for initialized data memory */
   app_data_main CYMEM_CM55_0_m55_data_INTERNAL_START CYMEM_CM55_0_m55_data_SIZE
   {
+    *(.cy_dtcm)
     .ANY (+RW +ZI)
   }
 

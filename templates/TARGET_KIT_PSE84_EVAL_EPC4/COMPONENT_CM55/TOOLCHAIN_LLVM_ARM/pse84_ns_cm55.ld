@@ -281,6 +281,10 @@ SECTIONS
 
         . = ALIGN(4);
 
+        KEEP(*(.cy_dtcm))
+
+        . = ALIGN(4);
+
         __data_end__ = .;
     } > m55_data_INTERNAL AT > m55_nvm_sel
 

@@ -6,36 +6,33 @@
 * Related Document : See README.md
 *
 ********************************************************************************
-* Copyright 2025, Cypress Semiconductor Corporation (an Infineon company) or
-* an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
-*
-* This software, including source code, documentation and related
-* materials ("Software") is owned by Cypress Semiconductor Corporation
-* or one of its affiliates ("Cypress") and is protected by and subject to
-* worldwide patent protection (United States and foreign),
-* United States copyright laws and international treaty provisions.
-* Therefore, you may use this Software only as provided in the license
-* agreement accompanying the software package from which you
-* obtained this Software ("EULA").
-* If no EULA applies, Cypress hereby grants you a personal, non-exclusive,
-* non-transferable license to copy, modify, and compile the Software
-* source code solely for use in connection with Cypress's
-* integrated circuit products.  Any reproduction, modification, translation,
-* compilation, or representation of this Software except as specified
-* above is prohibited without the express written permission of Cypress.
-*
-* Disclaimer: THIS SOFTWARE IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, NONINFRINGEMENT, IMPLIED
-* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. Cypress
-* reserves the right to make changes to the Software without notice. Cypress
-* does not assume any liability arising out of the application or use of the
-* Software or any product or circuit described in the Software. Cypress does
-* not authorize its products for use in any products where a malfunction or
-* failure of the Cypress product may reasonably be expected to result in
-* significant property damage, injury or death ("High Risk Product"). By
-* including Cypress's product in a High Risk Product, the manufacturer
-* of such system or application assumes all risk of such use and in doing
-* so agrees to indemnify Cypress against all liability.
+ * (c) 2025, Infineon Technologies AG, or an affiliate of Infineon
+ * Technologies AG. All rights reserved.
+ * This software, associated documentation and materials ("Software") is
+ * owned by Infineon Technologies AG or one of its affiliates ("Infineon")
+ * and is protected by and subject to worldwide patent protection, worldwide
+ * copyright laws, and international treaty provisions. Therefore, you may use
+ * this Software only as provided in the license agreement accompanying the
+ * software package from which you obtained this Software. If no license
+ * agreement applies, then any use, reproduction, modification, translation, or
+ * compilation of this Software is prohibited without the express written
+ * permission of Infineon.
+ *
+ * Disclaimer: UNLESS OTHERWISE EXPRESSLY AGREED WITH INFINEON, THIS SOFTWARE
+ * IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING, BUT NOT LIMITED TO, ALL WARRANTIES OF NON-INFRINGEMENT OF
+ * THIRD-PARTY RIGHTS AND IMPLIED WARRANTIES SUCH AS WARRANTIES OF FITNESS FOR A
+ * SPECIFIC USE/PURPOSE OR MERCHANTABILITY.
+ * Infineon reserves the right to make changes to the Software without notice.
+ * You are responsible for properly designing, programming, and testing the
+ * functionality and safety of your intended application of the Software, as
+ * well as complying with any legal requirements related to its use. Infineon
+ * does not guarantee that the Software will be free from intrusion, data theft
+ * or loss, or other breaches ("Security Breaches"), and Infineon shall have
+ * no liability arising out of any Security Breaches. Unless otherwise
+ * explicitly approved by Infineon, the Software may not be used in any
+ * application where a failure of the Product or any consequences of the use
+ * thereof can reasonably be expected to result in personal injury.
 *******************************************************************************/
 
 #include "cybsp.h"
@@ -92,6 +89,12 @@
 
 /* How often to print the MCPS (multiply by 10 ms) */
 #define PRINT_MCPS_COUNT                        (100u)    
+
+/* Command timeout when using single commands */
+#define CMD_TIMEOUT_SINGLE_CMD                  (5000U)
+
+/* Command timeout when using multiple commands */
+#define CMD_TIMEOUT_MULTI_CMD                   (20000U)
 
 /* Uncomment to print MCPS (Voice-Assistant only) */
 //#define SHOW_MCPS
@@ -533,6 +536,29 @@ void voice_assistant_task(void * arg)
         printf("Voice Assistant initialized!\r\n\r\n");
     }
 
+    /* Set the command timeout based on running mode */
+    if (RUNNING_MODE == VA_MODE_WW_SINGLE_CMD)
+    {
+        /* Set the command timeout for single commands */
+        va_result = voice_assistant_set_command_timeout(CMD_TIMEOUT_SINGLE_CMD);
+    }
+    else if (RUNNING_MODE == VA_MODE_WW_MULTI_CMD)
+    {
+        /* Set the command timeout for multiple commands */
+        va_result = voice_assistant_set_command_timeout(CMD_TIMEOUT_MULTI_CMD);
+    }
+    else if (RUNNING_MODE == VA_MODE_CMD_ONLY)
+    {
+        /* Set the command timeout for the maximum value */
+        va_result = voice_assistant_set_command_timeout(CY_NLU_COMMAND_TIMEOUT_MAX);
+    }
+
+    if (va_result != VA_RSLT_SUCCESS)
+    {
+        printf("Error setting timeout value. Error code=%d\r\n", va_result);
+        handle_error();
+    }
+
     /* Set the initial breathing counter value */
     if (RUNNING_MODE == VA_MODE_CMD_ONLY)
     {
@@ -709,6 +735,6 @@ void audio_enhancement_process_output(ae_buffer_info_t *output_buffer)
     /* Use the output data from the audio enhancement with the voice-assistant */
     run_voice_assistant_process(output_buffer->output_buf);
 }
-#endif
+#endif /* USE_AUDIO_ENHANCEMENT */
 
 /* [] END OF FILE */

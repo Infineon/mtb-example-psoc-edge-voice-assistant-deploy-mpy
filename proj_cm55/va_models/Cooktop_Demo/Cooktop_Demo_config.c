@@ -6,8 +6,8 @@
 * Related Document : See README.md
 *
 *****************************************************************************
-* Copyright 2023-2024, Cypress Semiconductor Corporation (an Infineon company) or
-* an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
+* Copyright 2025, Cypress Semiconductor Corporation (an Infineon company)
+* All rights reserved.
 *
 * This software, including source code, documentation and related
 * materials ("Software") is owned by Cypress Semiconductor Corporation
@@ -52,6 +52,7 @@
 #include "U55_NMBmodel.h"
 
 #include "Cooktop_Demo.h"
+#include "Cooktop_Demo_ifx_va_config_prms.h"
 
 /* Following am_tensor_arena has been counted as part of persistent memory total size */
 /* Tensor_arena buffer must be in SOCMEM and aligned by 16 which are required by U55 */
@@ -98,13 +99,14 @@ static mtb_nlu_setup_array_t nlu_setup_array =
 
 // WW config
 static mtb_wwd_conf_t ww_conf = {
+    .ww_params = Cooktop_Demo_dfww_prms,
     .callback.cb_for_event = CY_EVENT_SOD,
     .callback.cb_function = Cooktop_Demo_wake_word_callback
 };
 
 // NLU config
 static mtb_nlu_config_t nlu_conf = {
-    .nlu_pre_silence_timeout = 2000,
+    .nlu_params = Cooktop_Demo_dfcmd_prms,
     .nlu_command_timeout = 5000,
 };
 
@@ -113,6 +115,9 @@ static mtb_wwd_nlu_config_t ww_1_conf = {
     .cmd_model_ptr = Cooktop_Demo_CMDmodeldata,
     .nmb_model_ptr = NMBmodeldata,
     .wwd_nlu_buff_data = &wwd_nlu_buff,
+    .sod_params = Cooktop_Demo_sod_prms,
+    .hpf_params = Cooktop_Demo_pre_proc_hpf_prms,
+    .denoise_params = Cooktop_Demo_denoise_prms,
     .ww_conf = &ww_conf,
     .nlu_conf.nlu_config = &nlu_conf,
     .nlu_conf.nlu_variable_data = &nlu_setup_array,
@@ -126,19 +131,22 @@ char *Cooktop_Demo_ww_str[COOKTOP_DEMO_NO_OF_WAKE_WORD] = {"Hey Cook Top"};
 const char* Cooktop_Demo_intent_name_list[COOKTOP_DEMO_NUM_INTENTS] = {
     "SetPower",
     "SetHob",
-    "OffMic",
+    "SetTemp",
     "SetTimer",
+    "OffMic",
 };
 
 const char* Cooktop_Demo_variable_name_list[COOKTOP_DEMO_NUM_VARIABLES] = {
     "OnOff",
     "Hob",
+    "Temp",
     "Minutes",
 };
 
 const char* Cooktop_Demo_variable_phrase_list[COOKTOP_DEMO_NUM_VARIABLE_PHRASES] = {
     "on", "off", // OnOff
     "", // Hob
+    "", // Temp
     "", // Minutes
 };
 
@@ -159,19 +167,26 @@ const int Cooktop_Demo_intent_map_array[COOKTOP_DEMO_INTENT_MAP_ARRAY_TOTAL_SIZE
     0, 1, 0, 0, // power (on)
     0, 1, 0, 1, // power (off) <end-silence>
     1, 1, 1, -1, // Set hob <numbers10> {}
-    2, 0, // turn off microphone
-    2, 0, // switch off microphone
-    2, 0, // power off microphone
-    3, 1, 2, -1, // Set timer to <numbers30> {minute,minutes}
+    2, 1, 2, -1, // Set temp <numbers150to550by5> {degree,degrees}
+    2, 1, 2, -1, // Set temp to <numbers150to550by5> {degree,degrees}
+    2, 1, 2, -1, // Set temp at <numbers150to550by5> {degree,degrees}
+    2, 1, 2, -1, // Set temperature <numbers150to550by5> {degree,degrees}
+    2, 1, 2, -1, // Set temperature to <numbers150to550by5> {degree,degrees}
+    2, 1, 2, -1, // Set temperature at <numbers150to550by5> {degree,degrees}
+    3, 1, 3, -1, // Set timer to <numbers0to100by5> {minute,minutes}
+    4, 0, // turn off microphone
+    4, 0, // switch off microphone
+    4, 0, // power off microphone
 };
 
 const int Cooktop_Demo_intent_map_array_sizes[COOKTOP_DEMO_NUM_COMMANDS] = {
-    4, 4, 4, 2, 2, 2, 4, 
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 2, 2, 
 };
 
 const int Cooktop_Demo_variable_phrase_sizes[COOKTOP_DEMO_NUM_VARIABLES] = {
     2, // OnOff: (on,off)
     0, // Hob: None
+    0, // Temp: None
     0, // Minutes: None
 };
 
@@ -179,14 +194,20 @@ const int Cooktop_Demo_unit_phrase_map_array[COOKTOP_DEMO_UNIT_PHRASE_MAP_ARRAY_
     0, // None
     0, // None
     1, 1, 13, // {}
-    0, // None
-    0, // None
-    0, // None
+    1, 2, 0, 1, // {degree,degrees}
+    1, 2, 0, 1, // {degree,degrees}
+    1, 2, 0, 1, // {degree,degrees}
+    1, 2, 0, 1, // {degree,degrees}
+    1, 2, 0, 1, // {degree,degrees}
+    1, 2, 0, 1, // {degree,degrees}
     1, 2, 7, 8, // {minute,minutes}
+    0, // None
+    0, // None
+    0, // None
 };
 
 const int Cooktop_Demo_unit_phrase_map_array_sizes[COOKTOP_DEMO_NUM_COMMANDS] = {
-    1, 1, 3, 1, 1, 1, 4, 
+    1, 1, 3, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 
 };
 
 

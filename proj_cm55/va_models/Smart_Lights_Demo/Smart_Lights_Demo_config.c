@@ -6,8 +6,8 @@
 * Related Document : See README.md
 *
 *****************************************************************************
-* Copyright 2023-2024, Cypress Semiconductor Corporation (an Infineon company) or
-* an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
+* Copyright 2025, Cypress Semiconductor Corporation (an Infineon company)
+* All rights reserved.
 *
 * This software, including source code, documentation and related
 * materials ("Software") is owned by Cypress Semiconductor Corporation
@@ -52,6 +52,7 @@
 #include "U55_NMBmodel.h"
 
 #include "Smart_Lights_Demo.h"
+#include "Smart_Lights_Demo_ifx_va_config_prms.h"
 
 /* Following am_tensor_arena has been counted as part of persistent memory total size */
 /* Tensor_arena buffer must be in SOCMEM and aligned by 16 which are required by U55 */
@@ -98,13 +99,14 @@ static mtb_nlu_setup_array_t nlu_setup_array =
 
 // WW config
 static mtb_wwd_conf_t ww_conf = {
+    .ww_params = Smart_Lights_Demo_dfww_prms,
     .callback.cb_for_event = CY_EVENT_SOD,
     .callback.cb_function = Smart_Lights_Demo_wake_word_callback
 };
 
 // NLU config
 static mtb_nlu_config_t nlu_conf = {
-    .nlu_pre_silence_timeout = 2000,
+    .nlu_params = Smart_Lights_Demo_dfcmd_prms,
     .nlu_command_timeout = 5000,
 };
 
@@ -113,6 +115,9 @@ static mtb_wwd_nlu_config_t ww_1_conf = {
     .cmd_model_ptr = Smart_Lights_Demo_CMDmodeldata,
     .nmb_model_ptr = NMBmodeldata,
     .wwd_nlu_buff_data = &wwd_nlu_buff,
+    .sod_params = Smart_Lights_Demo_sod_prms,
+    .hpf_params = Smart_Lights_Demo_pre_proc_hpf_prms,
+    .denoise_params = Smart_Lights_Demo_denoise_prms,
     .ww_conf = &ww_conf,
     .nlu_conf.nlu_config = &nlu_conf,
     .nlu_conf.nlu_variable_data = &nlu_setup_array,
