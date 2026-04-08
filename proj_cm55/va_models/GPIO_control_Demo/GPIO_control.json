@@ -1,0 +1,66 @@
+{
+    "projectName": "gpio_control",
+    "settings": {
+        "arm_core_id": "U55",
+        "ww_false_fraction": 0.0005,
+        "cmd_reject_fraction": 1,
+        "sod_ww_noactivity_timeout_ms": 1000,
+        "ww_cmd_maxwwgap_ms": 2000,
+        "cmd_timeout_adjust_level": 0,
+        "dict": "English-US"
+    },
+    "wakewords": [
+        {
+            "interjections": [
+                "OK"
+            ],
+            "word": "test",
+            "phoneme": []
+        }
+    ],
+    "intents": [
+        {
+            "name": "P17_1low",
+            "nodes": [
+                {
+                    "required": true,
+                    "value": {
+                        "type": "text",
+                        "phrases": [
+                            "Make P seventeen one low"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "P17_1high",
+            "nodes": [
+                {
+                    "required": true,
+                    "value": {
+                        "type": "text",
+                        "phrases": [
+                            "Make P seventeen one high"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "stop",
+            "nodes": [
+                {
+                    "required": true,
+                    "value": {
+                        "type": "text",
+                        "phrases": [
+                            "Make the model die"
+                        ]
+                    }
+                }
+            ]
+        }
+    ],
+    "variables": []
+}

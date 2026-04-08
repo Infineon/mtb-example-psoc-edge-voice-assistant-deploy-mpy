@@ -1,8 +1,8 @@
-# PSOC&trade; Edge MCU: DEEPCRAFT&trade; Voice Assistant deployment
+# PSOC&trade; Edge MCU: DEEPCRAFT&trade; Voice Assistant deployment using MicroPython with Dual - Core Implementation
 
-This code example demonstrates how to use PSOC&trade; Edge MCU to deploy DEEPCRAFT&trade; Voice Assistant (VA) models to detect wake words and spoken commands using natural language.
+This code example demonstrates how to use PSOC&trade; Edge MCU to deploy DEEPCRAFT&trade; Voice Assistant (VA) models detecting wake words and spoken commands using natural language on CM55 while MicroPython running on CM33 core acts as the application host.
 
-This code example has a three project structure: CM33 secure, CM33 non-secure, and CM55 projects. All three projects are programmed to the external QSPI flash and executed in Execute in Place (XIP) mode. Extended boot launches the CM33 secure project from a fixed location in the external flash, which then configures the protection settings and launches the CM33 non-secure application. Additionally, CM33 non-secure application enables CM55 CPU and launches the CM55 application.
+This code example utilizes only CM55 core and is programmed to the external QSPI flash in Execute in Place (XIP) mode. It is mandatory to have MicroPython firmware flashed on CM33 to use this example code.
 
 > **Note:**
 > 1. The Audio and Voice middleware included in this example has a limited operation of about 15 and 30 minutes. For the unlimited license, contact Infineon support
@@ -12,11 +12,7 @@ This code example has a three project structure: CM33 secure, CM33 non-secure, a
 
 [Provide feedback on this code example.](https://yourvoice.infineon.com/jfe/form/SV_1NTns53sK2yiljn?Q_EED=eyJVbmlxdWUgRG9jIElkIjoiQ0UyNDE0MTAiLCJTcGVjIE51bWJlciI6IjAwMi00MTQxMCIsIkRvYyBUaXRsZSI6IlBTT0MmdHJhZGU7IEVkZ2UgTUNVOiBERUVQQ1JBRlQmdHJhZGU7IFZvaWNlIEFzc2lzdGFudCBkZXBsb3ltZW50IiwicmlkIjoicm9kb2xmby5sb3NzaW9AaW5maW5lb24uY29tIiwiRG9jIHZlcnNpb24iOiIxLjIuMCIsIkRvYyBMYW5ndWFnZSI6IkVuZ2xpc2giLCJEb2MgRGl2aXNpb24iOiJNQ0QiLCJEb2MgQlUiOiJJQ1ciLCJEb2MgRmFtaWx5IjoiUFNPQyJ9)
 
-See the [Design and implementation](docs/design_and_implementation.md) for the functional description of this code example.
-
-
 ## Requirements
-
 - [ModusToolbox&trade;](https://www.infineon.com/modustoolbox) v3.7 or later (tested with v3.7)
 - Board support package (BSP) minimum required version: 1.0.0
 - Programming language: C
@@ -31,20 +27,7 @@ See the [Design and implementation](docs/design_and_implementation.md) for the f
 
 ## Supported kits (make variable 'TARGET')
 
-- [PSOC&trade; Edge E84 Evaluation Kit](https://www.infineon.com/KIT_PSE84_EVAL) (`KIT_PSE84_EVAL_EPC2`) – Default value of `TARGET`
-- [PSOC&trade; Edge E84 Evaluation Kit](https://www.infineon.com/KIT_PSE84_EVAL) (`KIT_PSE84_EVAL_EPC4`)
 - [PSOC&trade; Edge E84 AI Kit](https://www.infineon.com/KIT_PSE84_AI) (`KIT_PSE84_AI`)
-
-
-## Hardware setup
-
-This example uses the board's default configuration. See the kit user guide to ensure that the board is configured correctly.
-
-Ensure the following jumper and pin configuration on board.
-- BOOT SW must be in the HIGH/ON position
-- J20 and J21 must be in the tristate/not connected (NC) position
-
-> **Note:** This hardware setup is not required for KIT_PSE84_AI.
 
 ## Software setup
 
@@ -65,26 +48,276 @@ For example: C:/llvm/LLVM-ET-Arm-19.1.5-Windows-x86_64
 
 If you like to customize the wake word and the spoken commands, you need to have access to the [DEEPCRAFT&trade; Voice-Assistant Cloud tool](https://deepcraft.infineon.com/solutions/voice-assistant) and create your own wake word and spoken commands.
 
-
 ## Operation
 
 See [Using the code example](docs/using_the_code_example.md) for instructions on creating a project, opening it in various supported IDEs, and performing tasks, such as building, programming, and debugging the application within the respective IDEs.
 
 1. Connect the board to your PC using the provided USB cable through the KitProg3 USB connector
 
-2. Open a terminal program and select the KitProg3 COM port. Set the serial port parameters to 8N1 and 115200 baud
+2. Program the CM55 core by clicking on the project and then flashing. This ensures only CM55 core is flashed.
 
-3. After programming, the application starts automatically. Confirm that "PSOC Edge MCU: Voice Assistant Deploy Demo" message is printed on the UART terminal. The kit's blue LED shall be ON, indicating the user to speak the wake word.
+3. Open a MicroPython supported IDE - like Thonny and connect to the same port where board is connected. Run the provided MicroPython application code.
 
-4. Speak the wake word "OK Infineon" and one of the commands from this [list](./proj_cm55/va_models/Smart_Lights_Demo/command_list_Smart_Lights_Demo.txt). To change the wake word and commands, see the [Design and implementation](docs/design_and_implementation.md) section. Note that after speaking the wake word, the kit's blue LED keeps breathing till a timeout occurs or a command is spoken.
+4. Speak the wake word "OK test" followed by command shown in the terminal.
 
 5. Confirm that the command is printed correctly in the terminal
 
 6. To customize the wake word and commands, use the [DEEPCRAFT&trade; Voice-Assistant Cloud tool](https://deepcraft.infineon.com/solutions/voice-assistant) to generate new code to be used in the application. Copy the generated files to the *proj_cm55/va_models* folder and update `DEEPCRAFT_PROJECT_NAME` in the *common.mk* file to the project name used in the cloud tool. Re-program the board and test the new wake word and commands
 
-7. The code example comes with the `LED_Demo` DEEPCRAFT&trade; project example, which controls the kit's green LED and prints the list of commands supported on the terminal. Set `DEEPCRAFT_PROJECT_NAME` to `LED_Demo` in the *common.mk* file to use this project, build and program it. Follow the instructions printed in the terminal.
+7. The code example comes with the `GPIO_control_Demo` DEEPCRAFT&trade; project example, which controls the kit's pin P17_1 and prints the list of commands supported on the terminal. Set `DEEPCRAFT_PROJECT_NAME` to `GPIO_control_Demo` in the *common.mk* file to use this project, build and program it. Follow the instructions printed in the terminal.
 
-> **Note:** Only the `LED_Demo` project prints the list of commands in the terminal. Any other project needs to refer to the text file listing all commands that come with the generated model.
+Detailed explanation is available in the following section.
+
+
+## Code Explanation
+The two cores communicate exclusively through the on-chip IPC (Inter-Processor Communication) pipe. CM55 handles all audio acquisition, preprocessing, wake-word detection, and command recognition — CM33 handles all application logic, LED control, display output, network connectivity, or any other task you choose to implement in MicroPython.
+
+### Sequence Diagram
+```mermaid
+sequenceDiagram
+    participant CM33 as CM33 (MicroPython)
+    participant CM55 as CM55 (Voice Assistant Model)
+
+    Note over CM55: Boot + Init BSP + IPC
+
+    CM55->>CM55: Create VA Task (Suspended)
+
+    CM33->>CM55: IPC_CMD_START (0x82)
+
+    CM55->>CM55: Resume VA Task
+    CM55->>CM55: Initialize Voice Assistant
+    CM55->>CM55: Set Command Timeout
+
+    CM55-->>CM33: IPC_CMD_VA_READY (0xA0)
+
+    loop Continuous Processing
+        CM55->>CM55: Capture Audio Frame
+
+        alt Audio Enhancement Enabled
+            CM55->>CM55: Process via AFE
+        end
+
+        CM55->>CM55: Run VA Processing
+
+        alt Wake Word Detected
+            CM55-->>CM33: IPC_CMD_VA_WAKEWORD_DETECTED (0xA2)
+        else Command Detected
+            CM55-->>CM33: intent_index
+        else Timeout
+            CM55-->>CM33: IPC_CMD_VA_TIMEOUT (0xA3)
+        end
+    end
+
+    CM33->>CM55: IPC_CMD_STOP (0x83)
+
+    CM55->>CM55: Suspend VA Task
+    CM55-->>CM33: IPC_CMD_VA_STOPPED (0xA4)
+```
+
+### IPC Communication Protocol Commands
+
+Following commands are sent from CM33 to control the Voice Assistant lifecycle:
+
+| Command | Value | Description |
+|--------|------|-------------|
+| `IPC_CMD_START` | `0x82` | Starts the Voice Assistant task on CM55 |
+| `IPC_CMD_STOP`  | `0x83` | Stops (suspends) the Voice Assistant task |
+
+Followings commands are sent from CM55 to notify CM33 about system state and detection results.
+
+| Command | Value | Description |
+|--------|------|-------------|
+| `IPC_CMD_VA_READY` | `0xA0` | Voice Assistant initialized and ready |
+| `IPC_CMD_VA_WAKEWORD_DETECTED` | `0xA2` | Wake word detected |
+| `IPC_CMD_VA_TIMEOUT` | `0xA3` | Command listening timed out |
+| `IPC_CMD_VA_STOPPED` | `0xA4` | Voice Assistant stopped (acknowledgement) |
+| `IPC_CMD_VA_ERROR` | `0xE1` | Fatal error occurred |
+
+### CM55 Code Flow
+
+```mermaid
+flowchart TD
+    A[System Boot] --> B[Initialize BSP]
+    B --> C[Setup IPC Communication]
+    C --> D[Register IPC Callback]
+
+    D --> E[Create VA Task]
+    E --> F[Suspend VA Task]
+
+    F --> G[Wait for IPC_CMD_START]
+
+    G -->|START received| H[Resume VA Task]
+
+    H --> I[Initialize PDM Microphone]
+    I --> J[Initialize Voice Assistant]
+
+    J --> K{Init Success?}
+    K -->|No| Z[Send IPC_CMD_VA_ERROR]
+    K -->|Yes| L[Set Command Timeout]
+
+    L --> M[Send IPC_CMD_VA_READY]
+
+    M --> N{VA Enabled?}
+
+    N -->|No| N
+    N -->|Yes| O[Capture Audio Frame]
+
+    O --> P{Audio Enhancement Enabled?}
+    P -->|Yes| Q[Process via AFE]
+    P -->|No| R[Run VA Processing]
+
+    Q --> R
+
+    R --> S{VA Event}
+
+    S -->|Wake Word| T[Send WAKEWORD Event]
+    S -->|Command| U[Send Intent Index]
+    S -->|Timeout| V[Send TIMEOUT Event]
+
+    T --> N
+    U --> N
+    V --> N
+
+    G -->|STOP received| W[Suspend VA Task]
+    W --> X[Send STOPPED Event]
+    X --> G
+```
+
+### CM33 Code Flow
+
+```mermaid
+flowchart TD
+    A[Boot MicroPython] --> B[Initialize IPC]
+    B --> C[Send IPC_CMD_START]
+
+    C --> D[Enter Event Loop]
+
+    D --> E{Message Available?}
+    E -->|No| D
+    E -->|Yes| F[Receive Message]
+
+    F --> G{Message Type}
+
+    G -->|VA_READY| H[System Ready]
+    G -->|WAKEWORD| I[Listening State]
+    G -->|TIMEOUT| J[Handle Timeout]
+    G -->|STOPPED| K[Update State]
+    G -->|ERROR| L[Handle Error]
+    G -->|Intent Index| M[Map Intent to Action]
+
+    M --> N[Execute Action]
+
+    H --> D
+    I --> D
+    J --> D
+    K --> D
+    L --> D
+    N --> D
+
+    D --> O{Stop Requested?}
+    O -->|Yes| P[Send IPC_CMD_STOP]
+    P --> D
+```
+
+### MicroPython Application code
+
+Below is the application code to be run on CM33 core post installation of MicroPython. To install MicroPython, follow the steps mentioned [here](https://ifx-micropython-psoc-edge.readthedocs.io/en/latest/psoc-edge/installation.html).
+
+```python
+from machine import IPC, Pin
+import time
+
+# --- Pin setup ---
+pin_p17_1 = Pin("P17_1", Pin.OUT, value=1)
+
+IPC_CMD_VA_READY             = 0xA0
+IPC_CMD_VA_WAKEWORD_DETECTED = 0xA2
+IPC_CMD_VA_TIMEOUT           = 0xA3
+IPC_CMD_VA_STOPPED           = 0xA4
+IPC_CMD_VA_ERROR             = 0xE1
+
+# --- Model intent index mapping (update to match your DEEPCRAFT model) ---
+# intent_index 0 -> "Make P17_1 high"
+# intent_index 1 -> "Make P17_1 low"
+INTENT_ACTIONS = {
+    0: lambda: (pin_p17_1.value(0), print("P17_1 -> LOW")),
+    1: lambda: (pin_p17_1.value(1), print("P17_1 -> HIGH")),
+}
+
+# --- IPC setup ---
+ipc = IPC(src_core=IPC.CM33, target_core=IPC.CM55)
+ipc.init()
+
+va_svc = {"received": False, "cmd": None}
+
+def va_svc_cb(cmd, val, cid):
+    va_svc["received"] = True
+    va_svc["cmd"] = cmd
+
+r1 = ipc.register_client(3, va_svc_cb, 1, 1)
+print("Voice Assistant Model service registered:", r1)
+
+ipc.enable_core(IPC.CM55)
+time.sleep_ms(500)
+
+ipc.send(IPC.CMD_START, 0, 5)
+print('\nSay the wake-word "OK test" followed by a command: \n1) Make P17_1 high \n2) Make P17_1 low\n')
+
+# --- Cycle tracking ---
+pin_low_done  = False
+pin_high_done = False
+
+# --- Main receive loop ---
+while True:
+    if va_svc["received"]:
+        cmd = va_svc["cmd"]
+        va_svc["received"] = False
+        va_svc["cmd"] = None
+
+        if cmd == IPC_CMD_VA_READY:
+            print("CM55: VA ready and listening")
+
+        elif cmd == IPC_CMD_VA_WAKEWORD_DETECTED:
+            print("CM55: Wake-word detected!")
+
+        elif cmd == IPC_CMD_VA_TIMEOUT:
+            print("CM55: Command timeout - say wake-word again")
+
+        elif cmd == IPC_CMD_VA_STOPPED:
+            print("CM55: VA stopped - exiting")
+            break
+
+        elif cmd == IPC_CMD_VA_ERROR:
+            print("CM55: Fatal VA error - exiting")
+            break
+
+        elif cmd in INTENT_ACTIONS:
+            INTENT_ACTIONS[cmd]()
+            # Track cycle completion
+            if cmd == 0: pin_low_done  = True
+            if cmd == 1: pin_high_done = True
+
+        else:
+            print("CM55: unknown cmd=0x{:02X}".format(cmd))
+
+        # Stop after one complete cycle
+        if pin_low_done and pin_high_done:
+            print("\nCycle complete - sending STOP to CM55")
+            ipc.send(IPC.CMD_STOP, 0, 5)
+            timeout = 1000
+            while timeout > 0 and not va_svc["received"]:
+                time.sleep_ms(10)
+                timeout -= 10
+            break
+
+    time.sleep_ms(10)
+
+# Cleanup
+pin_p17_1.value(1)
+time.sleep_ms(20)
+print("\nVA Assistant model execution stopped")
+
+```
 
 ## Related resources
 
