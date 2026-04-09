@@ -78,6 +78,6 @@ CONFIG_VOICE_CORE_MODE=LIMITED
 # Smart_Lights_Demo -- use the smart lights demo model (default)
 # LED_Demo          -- use the LED demo model
 # Cooktop_Demo      -- use the cooktop demo model
-DEEPCRAFT_PROJECT_NAME=GPIO_control
+DEEPCRAFT_PROJECT_NAME=test_gpio_control
 
 include ../common_app.mk
