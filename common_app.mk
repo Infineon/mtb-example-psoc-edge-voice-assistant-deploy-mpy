@@ -50,7 +50,7 @@ CY_TOOLS_DIR=$(lastword $(sort $(wildcard $(CY_TOOLS_PATHS))))
 #
 # The default path depends on the selected TOOLCHAIN and is set in the 
 # Make recipe.
-CY_COMPILER_LLVM_ARM_DIR?=
+CY_COMPILER_LLVM_ARM_DIR?=C:/llvm/LLVM-ET-Arm-19.1.5-Windows-x86_64
 
 CY_COMPILER_ARM_DIR?=
 

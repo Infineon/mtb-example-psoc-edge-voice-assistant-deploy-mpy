@@ -29,7 +29,7 @@ MTB_TYPE=PROJECT
 # To change the target, it is recommended to use the Library manager
 # ('make library-manager' from command line), which will also update 
 # Eclipse IDE launch configurations.
-TARGET=KIT_PSE84_EVAL_EPC2
+TARGET=APP_KIT_PSE84_AI
 
 # Name of toolchain to use. Options include:
 #
@@ -53,7 +53,8 @@ MTB_SUPPORTED_TOOLCHAINS?=LLVM_ARM ARM
 
 # Config file for postbuild sign and merge operations.
 # NOTE: Check the JSON file for the command parameters
-COMBINE_SIGN_JSON?=configs/boot_with_extended_boot.json
+COMBINE_SIGN_JSON?=
+#configs/boot_with_extended_boot.json
 
 # Option to enable the DEEPCRAFT Audio Enhancement.
 #
@@ -77,6 +78,6 @@ CONFIG_VOICE_CORE_MODE=LIMITED
 # Smart_Lights_Demo -- use the smart lights demo model (default)
 # LED_Demo          -- use the LED demo model
 # Cooktop_Demo      -- use the cooktop demo model
-DEEPCRAFT_PROJECT_NAME=Smart_Lights_Demo
+DEEPCRAFT_PROJECT_NAME=test_gpio_control
 
 include ../common_app.mk
