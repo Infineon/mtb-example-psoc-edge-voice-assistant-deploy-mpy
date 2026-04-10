@@ -63,7 +63,7 @@ See [Using the code example](docs/using_the_code_example.md) for instructions on
 
 6. To customize the wake word and commands, use the [DEEPCRAFT&trade; Voice-Assistant Cloud tool](https://deepcraft.infineon.com/solutions/voice-assistant) to generate new code to be used in the application. Copy the generated files to the *proj_cm55/va_models* folder and update `DEEPCRAFT_PROJECT_NAME` in the *common.mk* file to the project name used in the cloud tool. Re-program the board and test the new wake word and commands
 
-7. The code example comes with the `GPIO_control_Demo` DEEPCRAFT&trade; project example, which controls the kit's pin P17_1 and prints the list of commands supported on the terminal. Set `DEEPCRAFT_PROJECT_NAME` to `GPIO_control_Demo` in the *common.mk* file to use this project, build and program it. Follow the instructions printed in the terminal.
+7. The code example comes with the `test_gpio_control` DEEPCRAFT&trade; project example, which controls the kit's pin P17_1 and prints the list of commands supported on the terminal. Set `DEEPCRAFT_PROJECT_NAME` to `test_gpio_control` in the *common.mk* file to use this project, build and program it. Follow the instructions printed in the terminal.
 
 Detailed explanation is available in the following section.
 
