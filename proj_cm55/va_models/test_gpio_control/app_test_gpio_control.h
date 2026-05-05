@@ -1,7 +1,7 @@
 #ifndef APP_TEST_GPIO_CONTROL_h
 #define APP_TEST_GPIO_CONTROL_h
 
-#include "../ci_test/test_gpio_control.h"
+#include "test_gpio_control.h"
 
 #define  TEST_GPIO_CONTROL_INTENT_P17_1low           0x0
 #define  TEST_GPIO_CONTROL_INTENT_P17_1high          0x1
