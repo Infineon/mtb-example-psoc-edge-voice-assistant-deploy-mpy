@@ -87,6 +87,8 @@ SOURCES+=$(wildcard ../shared/source/COMPONENT_CM55/*.c)
 # Like SOURCES, but for include directories. Value should be paths to
 # directories (without a leading -I).
 INCLUDES+=../shared/include
+# deepcraft-model-interface shared header (deepcraft_interface.h)
+INCLUDES+=../micropython-deepcraft-model-interface/deepcraft
 
 # Add additional defines to the build process (without a leading -D).
 DEFINES+=CY_RETARGET_IO_CONVERT_LF_TO_CRLF CY_RTOS_AWARE 

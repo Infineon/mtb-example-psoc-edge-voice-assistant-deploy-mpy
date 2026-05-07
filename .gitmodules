@@ -1,0 +1,4 @@
+[submodule "micropython-deepcraft-model-interface"]
+	path = micropython-deepcraft-model-interface
+	url = https://github.com/Infineon/micropython-deepcraft-model-interface
+	branch = dc_va_integration

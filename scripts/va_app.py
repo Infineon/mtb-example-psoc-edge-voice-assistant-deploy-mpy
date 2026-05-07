@@ -1,92 +1,118 @@
+"""
+va_app.py — Host-side (MicroPython) Voice Assistant application.
+
+Uses the DEEPCRAFTModel wrapper library so application code never touches
+raw IPC commands or client/endpoint IDs directly.
+
+Layer:
+    va_app.py
+        │  uses high-level events (VA_EVENT_*)
+        ▼
+    deepcraft_model.DEEPCRAFTModel    ← wrapper library (deepcraft_interface.c)
+        │  calls send / register_client on the injected transport object
+        ▼
+    machine.IPC                       ← MicroPython IPC module (machine_ipc.c)
+        │
+        ▼ IPC pipe
+    Target (CM55 running main.c + deepcraft_ipc_cm55.c)
+
+To use a different transport, pass any object with matching method signatures
+(send, register_client, enable_target) to DEEPCRAFTModel(); nothing else changes.
+"""
+
 from machine import IPC, Pin
+from deepcraft_model import DEEPCRAFTModel
 import time
 
-# --- Pin setup ---
-pin_p17_1 = Pin("P17_1", Pin.OUT, value=1)
+# ---------------------------------------------------------------------------
+# Hardware output — update to match your board/model
+# ---------------------------------------------------------------------------
+pin_out = Pin("P17_1", Pin.OUT, value=1)
 
-IPC_CMD_VA_READY             = 0xA0
-IPC_CMD_VA_WAKEWORD_DETECTED = 0xA2
-IPC_CMD_VA_TIMEOUT           = 0xA3
-IPC_CMD_VA_STOPPED           = 0xA4
-IPC_CMD_VA_ERROR             = 0xE1
-
-# --- Model intent index mapping (update to match your DEEPCRAFT model) ---
-# intent_index 0 -> "Make P17_1 high"
-# intent_index 1 -> "Make P17_1 low"
+# Intent index → action mapping.
+# Update these to match the commands defined in your DEEPCRAFT model.
 INTENT_ACTIONS = {
-    0: lambda: (pin_p17_1.value(0), print("P17_1 -> LOW")),
-    1: lambda: (pin_p17_1.value(1), print("P17_1 -> HIGH")),
+    0: lambda: (pin_out.value(0), print("[HOST] P17_1 -> LOW")),
+    1: lambda: (pin_out.value(1), print("[HOST] P17_1 -> HIGH")),
 }
 
-# --- IPC setup ---
+# ---------------------------------------------------------------------------
+# Transport setup — IPC
+# DEEPCRAFTModel constructor calls ipc.init() automatically.
+# ---------------------------------------------------------------------------
 ipc = IPC(src_core=IPC.CM33, target_core=IPC.CM55)
-ipc.init()
 
-va_svc = {"received": False, "cmd": None}
+# ---------------------------------------------------------------------------
+# DEEPCRAFTModel — wraps the transport and exposes VA events
+#
+# Optional keyword arguments (shown with their defaults):
+#   model            = DEEPCRAFTModel.MODEL_VA
+#   target_client_id = 5    (target IPC pipe client ID)
+#   recv_client_id   = 3    (host    IPC pipe client ID)
+#   recv_ep_addr     = 1    (host    IPC pipe endpoint address)
+#   target_id        = 1    (IPC.CM55 — passed to ipc.enable_target())
+# ---------------------------------------------------------------------------
+model = DEEPCRAFTModel(ipc)
 
-def va_svc_cb(cmd, val, cid):
-    va_svc["received"] = True
-    va_svc["cmd"] = cmd
+# ---------------------------------------------------------------------------
+# Event callback — invoked by the wrapper with (va_model_events_t, value)
+# ---------------------------------------------------------------------------
+def on_va_event(event, value):
+    if event == DEEPCRAFTModel.VA_EVENT_READY:
+        print("[HOST] VA ready and listening")
 
-r1 = ipc.register_client(3, va_svc_cb, 1, 1)
-print("Voice Assistant Model service registered:", r1)
+    elif event == DEEPCRAFTModel.VA_EVENT_WAKEWORD_DETECTED:
+        print("[HOST] Wake-word detected!")
 
-ipc.enable_core(IPC.CM55)
-time.sleep_ms(500)
-
-ipc.send(IPC.CMD_START, 0, 5)
-print('\nSay the wake-word "OK test" followed by a command: \n1) Make P17_1 high \n2) Make P17_1 low\n')
-
-# --- Cycle tracking ---
-pin_low_done  = False
-pin_high_done = False
-
-# --- Main receive loop ---
-while True:
-    if va_svc["received"]:
-        cmd = va_svc["cmd"]
-        va_svc["received"] = False
-        va_svc["cmd"] = None
-
-        if cmd == IPC_CMD_VA_READY:
-            print("CM55: VA ready and listening")
-
-        elif cmd == IPC_CMD_VA_WAKEWORD_DETECTED:
-            print("CM55: Wake-word detected!")
-
-        elif cmd == IPC_CMD_VA_TIMEOUT:
-            print("CM55: Command timeout - say wake-word again")
-
-        elif cmd == IPC_CMD_VA_STOPPED:
-            print("CM55: VA stopped - exiting")
-            break
-
-        elif cmd == IPC_CMD_VA_ERROR:
-            print("CM55: Fatal VA error - exiting")
-            break
-
-        elif cmd in INTENT_ACTIONS:
-            INTENT_ACTIONS[cmd]()
-            # Track cycle completion
-            if cmd == 0: pin_low_done  = True
-            if cmd == 1: pin_high_done = True
-
+    elif event == DEEPCRAFTModel.VA_EVENT_INTENT:
+        intent_idx = value
+        print("[HOST] Intent received: index =", intent_idx)
+        action = INTENT_ACTIONS.get(intent_idx)
+        if action:
+            action()
         else:
-            print("CM55: unknown cmd=0x{:02X}".format(cmd))
+            print("[HOST] Unknown intent index:", intent_idx)
 
-        # Stop after one complete cycle
-        if pin_low_done and pin_high_done:
-            print("\nCycle complete - sending STOP to CM55")
-            ipc.send(IPC.CMD_STOP, 0, 5)
-            timeout = 1000
-            while timeout > 0 and not va_svc["received"]:
-                time.sleep_ms(10)
-                timeout -= 10
-            break
+    elif event == DEEPCRAFTModel.VA_EVENT_TIMEOUT:
+        print("[HOST] Command timeout — say the wake-word again")
+
+    elif event == DEEPCRAFTModel.VA_EVENT_STOPPED:
+        print("[HOST] VA stopped")
+
+    elif event == DEEPCRAFTModel.VA_EVENT_ERROR:
+        print("[HOST] Fatal VA error")
+
+    else:
+        print("[HOST] Unknown event:", event, "value:", value)
+
+model.set_event_cb(on_va_event)
+
+# ---------------------------------------------------------------------------
+# Boot the target and start the VA
+# ---------------------------------------------------------------------------
+model.enable_target()     # powers on / boots the target processor
+time.sleep_ms(500)        # allow target boot time
+
+model.start()             # sends DEEPCRAFT_CMD_START to the target
+print('\n[HOST] Say the wake-word "OK test" followed by a command:')
+print('       0) Make P17_1 LOW')
+print('       1) Make P17_1 HIGH\n')
+
+# ---------------------------------------------------------------------------
+# Main event loop — poll the flag set by the IPC callback
+# ---------------------------------------------------------------------------
+# DEEPCRAFTModel routes all incoming IPC messages to on_va_event above.
+# The loop below just keeps the interpreter alive; add your own application
+# logic here (networking, display updates, etc.).
+while True:
+    # Stop after one complete cycle (both commands seen)
+    if model.state() == DEEPCRAFTModel.STATE_IDLE:
+        # VA sent VA_EVENT_STOPPED — clean exit
+        break
 
     time.sleep_ms(10)
 
 # Cleanup
-pin_p17_1.value(1)
+pin_out.value(1)
 time.sleep_ms(20)
 print("\nVA Assistant model execution stopped")
