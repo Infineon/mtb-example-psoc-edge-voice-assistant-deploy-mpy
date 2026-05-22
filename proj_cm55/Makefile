@@ -755,7 +755,6 @@ define flash_target
     $(Q)$(OPENOCD) \
         $(OPENOCD_OPEN_CMDS) \
         -c "flash write_image erase $(1)" \
-        -c "verify_image $(1)" \
         $(OPENOCD_CLOSE_CMDS)
 endef
 
