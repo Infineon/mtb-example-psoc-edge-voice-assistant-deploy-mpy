@@ -151,3 +151,7 @@ ehthumbs.db
 ehthumbs_vista.db
 [Dd]esktop.ini
 *:Zone.Identifier
+*/.hardware-config-server.generated-files
+*.timestamp
+design.cyqspi.memory-export
+deps/assetlocks.json
