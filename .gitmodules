@@ -2,3 +2,89 @@
 	path = micropython-deepcraft-model-interface
 	url = https://github.com/Infineon/micropython-deepcraft-model-interface
 	branch = dc_va_integration
+[submodule "psoc-edge/abstraction-rtos"]
+	path = psoc-edge/abstraction-rtos
+	url = https://github.com/Infineon/abstraction-rtos.git
+	branch = release-v1.12.0
+[submodule "psoc-edge/async-transfer"]
+	path = psoc-edge/async-transfer
+	url = https://github.com/Infineon/async-transfer.git
+	branch = release-v1.1.0
+[submodule "psoc-edge/audio-front-end"]
+	path = psoc-edge/audio-front-end
+	url = https://github.com/Infineon/audio-front-end.git
+	branch = release-v1.0.1
+[submodule "psoc-edge/audio-voice-core"]
+	path = psoc-edge/audio-voice-core
+	url = https://github.com/Infineon/audio-voice-core.git
+	branch = release-v2.0.0
+[submodule "psoc-edge/bt-fw-mur-cyw55513"]
+	path = psoc-edge/bt-fw-mur-cyw55513
+	url = https://github.com/Infineon/bt-fw-mur-cyw55513.git
+	branch = release-v1.0.0
+[submodule "psoc-edge/clib-support"]
+	path = psoc-edge/clib-support
+	url = https://github.com/Infineon/clib-support.git
+	branch = release-v1.8.0
+[submodule "psoc-edge/cmsis"]
+	path = psoc-edge/cmsis
+	url = https://github.com/Infineon/cmsis.git
+	branch = release-v6.1.0
+[submodule "psoc-edge/connectivity-utilities"]
+	path = psoc-edge/connectivity-utilities
+	url = https://github.com/Infineon/connectivity-utilities.git
+	branch = release-v4.5.2
+[submodule "psoc-edge/core-lib"]
+	path = psoc-edge/core-lib
+	url = https://github.com/Infineon/core-lib.git
+	branch = release-v1.7.0
+[submodule "psoc-edge/core-make"]
+	path = psoc-edge/core-make
+	url = https://github.com/Infineon/core-make.git
+[submodule "psoc-edge/freertos"]
+	path = psoc-edge/freertos
+	url = https://github.com/Infineon/freertos.git
+	branch = release-v10.6.202
+[submodule "psoc-edge/ml-middleware"]
+	path = psoc-edge/ml-middleware
+	url = https://github.com/Infineon/ml-middleware.git
+	branch = release-v3.3.0
+[submodule "psoc-edge/ml-tflite-micro"]
+	path = psoc-edge/ml-tflite-micro
+	url = https://github.com/Infineon/ml-tflite-micro.git
+	branch = release-v3.3.0
+[submodule "psoc-edge/mtb-dsl-pse8xxgp"]
+	path = psoc-edge/mtb-dsl-pse8xxgp
+	url = https://github.com/Infineon/mtb-dsl-pse8xxgp.git
+	branch = release-v1.3.0
+[submodule "psoc-edge/mtb-ipc"]
+	path = psoc-edge/mtb-ipc
+	url = https://github.com/Infineon/mtb-ipc.git
+	branch = release-v1.2.0
+[submodule "psoc-edge/mtb-srf"]
+	path = psoc-edge/mtb-srf
+	url = https://github.com/Infineon/mtb-srf.git
+	branch = release-v1.1.1
+[submodule "psoc-edge/retarget-io"]
+	path = psoc-edge/retarget-io
+	url = https://github.com/Infineon/retarget-io.git
+	branch = release-v1.9.0
+[submodule "psoc-edge/se-rt-services-utils"]
+	path = psoc-edge/se-rt-services-utils
+	url = https://github.com/Infineon/se-rt-services-utils.git
+	branch = release-v1.2.0
+[submodule "psoc-edge/serial-memory"]
+	path = psoc-edge/serial-memory
+	url = https://github.com/Infineon/serial-memory.git
+[submodule "psoc-edge/speech-onset-detection"]
+	path = psoc-edge/speech-onset-detection
+	url = https://github.com/Infineon/speech-onset-detection.git
+	branch = release-v1.0.1
+[submodule "psoc-edge/voice-assistant"]
+	path = psoc-edge/voice-assistant
+	url = https://github.com/Infineon/voice-assistant.git
+	branch = release-v2.1.0
+[submodule "psoc-edge/TARGET_KIT_PSE84_AI"]
+	path = psoc-edge/TARGET_KIT_PSE84_AI
+	url = https://github.com/Infineon/TARGET_KIT_PSE84_AI.git
+	branch = release-v1.3.0

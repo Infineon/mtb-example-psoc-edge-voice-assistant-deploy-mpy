@@ -184,8 +184,6 @@ int main(void)
 
     __enable_irq();
 
-    //retarget_io_init();
-
     /* Initialise the DeepCraft model interface (transport configured inside) */
     deepcraft_wrapper_init(on_va_start, on_va_stop);
 
