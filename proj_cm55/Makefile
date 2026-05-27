@@ -9,21 +9,11 @@
 #   make deploy             # flash via OpenOCD
 #
 # Prerequisites:
-#   - LLVM Embedded Toolchain for Arm 19.1.5 installed
+#   - LLVM Embedded Toolchain for Arm 19.1.5 installed and added to path (example: export PATH=/opt/Tools/LLVM-ET-Arm-19.1.5-Linux-x86_64/bin:$PATH)
 #   - All library submodules present (psoc-edge/ populated)
 #   - cy_afe_configurator_settings.c generated into bsp-cfg/
 #     (copy from afe/GeneratedSource/ if the AFE configurator has been run)
 ################################################################################
-
-################################################################################
-# User-configurable paths
-################################################################################
-
-# Path to LLVM Embedded Toolchain for Arm
-LLVM_DIR ?= /opt/Tools/LLVM-ET-Arm-19.1.5-Linux-x86_64
-
-# Path to OpenOCD (for the 'flash' target)
-OPENOCD ?= /opt/Tools/ModusToolboxProgtools-1.5/openocd/bin/openocd
 
 ################################################################################
 # Project settings
@@ -44,13 +34,14 @@ BUILD_DIR := build/$(CONFIG)
 # Toolchain
 ################################################################################
 
-CC      := $(LLVM_DIR)/bin/clang
-CXX     := $(LLVM_DIR)/bin/clang++
-AS      := $(LLVM_DIR)/bin/clang
-LD      := $(LLVM_DIR)/bin/clang
-AR      := $(LLVM_DIR)/bin/llvm-ar
-OBJCOPY := $(LLVM_DIR)/bin/llvm-objcopy
-SIZE    := $(LLVM_DIR)/bin/llvm-size
+CC      := clang
+CXX     := clang++
+AS      := clang
+LD      := clang
+AR      := llvm-ar
+OBJCOPY := llvm-objcopy
+SIZE    := llvm-size
+OPENOCD := openocd
 
 ################################################################################
 # Paths derived from WORKSPACE_DIR
