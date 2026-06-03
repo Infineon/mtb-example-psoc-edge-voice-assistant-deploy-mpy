@@ -37,13 +37,9 @@ BUILD_DIR := build/$(CONFIG)
 RM_RF := rm -rf
 
 ifeq ($(OS),Windows_NT)
-    # WSL inherits OS=Windows_NT from Windows; detect it via /proc/version (present on
-    # Linux/WSL, absent on native Windows) — no shell spawn needed, avoids cmd.exe errors.
     _IS_WSL := $(wildcard /proc/version)
     ifneq ($(_IS_WSL),)
         SHELL := /bin/sh
-        # Clear LLVM_DIR if it's a Windows-style path (contains ':') inherited via WSLENV.
-        # The user must export a Linux LLVM_DIR separately (e.g. in ~/.bashrc).
         ifneq (,$(findstring :,$(LLVM_DIR)))
             override undefine LLVM_DIR
         endif
