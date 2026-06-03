@@ -34,7 +34,7 @@ BUILD_DIR := build/$(CONFIG)
 # Cross-platform setup
 ################################################################################
 
-RM_RF := rm -rf
+RM_RF := $(if $(filter $(OS),Windows_NT),cmd /c rd /s /q,rm -rf)
 
 ifeq ($(OS),Windows_NT)
     _IS_WSL := $(wildcard /proc/version)
@@ -43,8 +43,6 @@ ifeq ($(OS),Windows_NT)
         ifneq (,$(findstring :,$(LLVM_DIR)))
             override undefine LLVM_DIR
         endif
-    else
-        SHELL := sh.exe
     endif
 else
     SHELL := /bin/sh
@@ -686,18 +684,17 @@ BIN := $(BUILD_DIR)/$(APPNAME).bin
 # Build rules
 ################################################################################
 
-.PHONY: all clean clean-model flash size submodules
+.PHONY: all clean flash size submodules
 
 all: $(HEX) $(BIN) size
 
 $(BUILD_DIR)/obj:
-	@mkdir -p $@
+	$(if $(filter $(OS),Windows_NT),if not exist "$(subst /,\,$@)" mkdir "$(subst /,\,$@)",mkdir -p $@)
 
 # C compilation rule — uses a static pattern over ALL_C_SRCS
 define C_RULE
 $(call _src_to_obj,$(1)): $(1) | $(BUILD_DIR)/obj
-	@mkdir -p $$(dir $$@)
-	@echo "  CC  $(notdir $(1))"
+	@echo   CC  $(notdir $(1))
 	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MF $$(@:.o=.d) -MT $$@ -o $$@ $$<
 endef
 $(foreach s,$(ALL_C_SRCS),$(eval $(call C_RULE,$(s))))
@@ -705,8 +702,7 @@ $(foreach s,$(ALL_C_SRCS),$(eval $(call C_RULE,$(s))))
 # C++ compilation rule
 define CXX_RULE
 $(call _src_to_obj,$(1)): $(1) | $(BUILD_DIR)/obj
-	@mkdir -p $$(dir $$@)
-	@echo "  CXX $(notdir $(1))"
+	@echo   CXX $(notdir $(1))
 	@$(CXX) $(CXXFLAGS) $(DEFINES) $(INCLUDES) -MF $$(@:.o=.d) -MT $$@ -o $$@ $$<
 endef
 $(foreach s,$(ALL_CXX_SRCS),$(eval $(call CXX_RULE,$(s))))
@@ -714,27 +710,25 @@ $(foreach s,$(ALL_CXX_SRCS),$(eval $(call CXX_RULE,$(s))))
 # Assembly rule
 define S_RULE
 $(call _src_to_obj,$(1)): $(1) | $(BUILD_DIR)/obj
-	@mkdir -p $$(dir $$@)
-	@echo "  AS  $(notdir $(1))"
+	@echo   AS  $(notdir $(1))
 	@$(AS) $(ASFLAGS) $(DEFINES) $(INCLUDES) -MF $$(@:.o=.d) -MT $$@ -o $$@ $$<
 endef
 $(foreach s,$(ALL_S_SRCS),$(eval $(call S_RULE,$(s))))
 
 # Link
 OBJS_RSP := $(BUILD_DIR)/objects.rsp
-$(ELF): $(ALL_OBJS) $(LDLIBS)
-	@echo "  LD  $@"
-	@mkdir -p $(dir $@)
+$(ELF): $(ALL_OBJS) $(LDLIBS) | $(BUILD_DIR)/obj
+	@echo   LD  $@
 	$(file >$(OBJS_RSP),$(ALL_OBJS))
 	@$(LD) $(LDFLAGS) -o $@ \
             -Wl,--start-group @$(OBJS_RSP) $(LDLIBS) -Wl,--end-group $(LD_EXTRA_LIBS)
 # Post-processing
 $(HEX): $(ELF)
-	@echo "  HEX $@"
+	@echo   HEX $@
 	@$(OBJCOPY) -O ihex $< $@
 
 $(BIN): $(ELF)
-	@echo "  BIN $@"
+	@echo   BIN $@
 	@$(OBJCOPY) -O binary $< $@
 
 size: $(ELF)
@@ -743,17 +737,6 @@ size: $(ELF)
 # Clean
 clean:
 	$(RM_RF) $(BUILD_DIR)
-
-# Partial clean: remove project + model objects and link artifacts.
-# BSP and library .o files are kept so they don't need to be recompiled.
-clean-model:
-	@rm -f $(BUILD_DIR)/obj/proj_cm55_*.o 2>/dev/null || true
-	@rm -f $(BUILD_DIR)/$(APPNAME).elf \
-	       $(BUILD_DIR)/$(APPNAME).hex \
-	       $(BUILD_DIR)/$(APPNAME).bin \
-	       $(BUILD_DIR)/$(APPNAME).map \
-	       $(BUILD_DIR)/objects.rsp 2>/dev/null || true
-	@echo "[dc-va] Model objects cleaned"
 
 # Initialize all psoc-edge submodules
 submodules:
