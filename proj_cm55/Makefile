@@ -31,6 +31,30 @@ BOARD_DIR        := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 BUILD_DIR := build/$(CONFIG)
 
 ################################################################################
+# Cross-platform setup
+################################################################################
+
+RM_RF := rm -rf
+
+ifeq ($(OS),Windows_NT)
+    # WSL inherits OS=Windows_NT from Windows; detect it via /proc/version (present on
+    # Linux/WSL, absent on native Windows) — no shell spawn needed, avoids cmd.exe errors.
+    _IS_WSL := $(wildcard /proc/version)
+    ifneq ($(_IS_WSL),)
+        SHELL := /bin/sh
+        # Clear LLVM_DIR if it's a Windows-style path (contains ':') inherited via WSLENV.
+        # The user must export a Linux LLVM_DIR separately (e.g. in ~/.bashrc).
+        ifneq (,$(findstring :,$(LLVM_DIR)))
+            override undefine LLVM_DIR
+        endif
+    else
+        SHELL := sh.exe
+    endif
+else
+    SHELL := /bin/sh
+endif
+
+################################################################################
 # Toolchain
 ################################################################################
 
@@ -43,12 +67,26 @@ OBJCOPY := llvm-objcopy
 SIZE    := llvm-size
 OPENOCD := openocd
 
+ifdef LLVM_DIR
+    CC      := $(LLVM_DIR)/bin/clang
+    CXX     := $(LLVM_DIR)/bin/clang++
+    AS      := $(LLVM_DIR)/bin/clang
+    LD      := $(LLVM_DIR)/bin/clang
+    AR      := $(LLVM_DIR)/bin/llvm-ar
+    OBJCOPY := $(LLVM_DIR)/bin/llvm-objcopy
+    SIZE    := $(LLVM_DIR)/bin/llvm-size
+    export PATH := $(subst \,/,$(LLVM_DIR))/bin:$(PATH)
+endif
+
 ################################################################################
 # Paths derived from WORKSPACE_DIR
 ################################################################################
 
 # PSoC Edge SDK libraries (psoc-edge/ inside the app repo)
-PSE_DIR := $(abspath ..)/psoc-edge
+# Repository root -- used to keep object-file paths short (Windows MAX_PATH)
+REPO_ROOT := $(abspath ..)
+
+PSE_DIR := $(REPO_ROOT)/psoc-edge
 
 # Application root (this Makefile lives in proj_cm55/)
 APP_DIR := $(abspath .)
@@ -153,17 +191,12 @@ DEFINES := \
     -DCOMPONENT_CMSIS_DSP \
     -DCOMPONENT_FREERTOS \
     -DCOMPONENT_HARDFP \
-    -DCOMPONENT_HCI_UART \
     -DCOMPONENT_LLVM_ARM \
     -DCOMPONENT_ML_INT8x8 \
     -DCOMPONENT_ML_TFLM \
     -DCOMPONENT_MTB_DEVICE_SUPPORT \
     -DCOMPONENT_MTB_HAL \
-    -DCOMPONENT_MURATA_2FY \
     -DCOMPONENT_MW_ASYNC_TRANSFER \
-    -DCOMPONENT_MW_BT_FW_MUR_CYW55513 \
-    -DCOMPONENT_MW_CMSIS \
-    -DCOMPONENT_MW_CORE_LIB \
     -DCOMPONENT_MW_DSNS_MODEL \
     -DCOMPONENT_MW_MDL_DSES \
     -DCOMPONENT_MW_MDL_DSNS \
@@ -175,20 +208,15 @@ DEFINES := \
     -DCOMPONENT_NON_SECURE_DEVICE \
     -DCOMPONENT_PSE84 \
     -DCOMPONENT_RTOS_AWARE \
-    -DCOMPONENT_SM \
     -DCOMPONENT_U55 \
-    -DCOMPONENT_WIFI_INTERFACE_SDIO \
     -DCORE_NAME_CM55_0=1 \
     -DCYBSP_MCUBOOT_HEADER_SIZE=0x400 \
-    -DCYBSP_WIFI_WL_HOSTWAKE_DRIVE_MODE=MTB_HAL_GPIO_DRIVE_OPENDRAINDRIVESLOW \
-    -DCYBSP_WIFI_WL_HOSTWAKE_INIT_STATE=WHD_TRUE \
     -DCY_APPNAME_$(APPNAME) \
     -DCY_ML_MODEL_MEM=.cy_socmem_data \
     -DCY_RETARGET_IO_CONVERT_LF_TO_CRLF \
     -DCY_RTOS_AWARE \
     -DCY_SUPPORTS_DEVICE_VALIDATION \
     -DCY_TARGET_BOARD=APP_KIT_PSE84_AI \
-    -DCY_WIFI_COUNTRY='WHD_COUNTRY_UNITED_STATES' \
     -DDSNS_ENABLE_MTB_ML \
     -DENABLE_AFE_MW_SUPPORT \
     -DENABLE_IFX_PRE_PROCESS_HPF \
@@ -396,8 +424,9 @@ LIB_C_SRCS += \
 
 # cmsis-dsp — all sources under COMPONENT_CMSIS_DSP/Source/
 CMSIS_DSP_INC_DIRS := $(LIB_CMSIS)/COMPONENT_CMSIS_DSP/Include
-CMSIS_DSP_SRC_DIRS := $(shell find $(LIB_CMSIS)/COMPONENT_CMSIS_DSP/Source -maxdepth 1 -type d)
-LIB_C_SRCS += $(foreach d,$(CMSIS_DSP_SRC_DIRS),$(wildcard $(d)/*.c))
+CMSIS_DSP_SRCS := $(wildcard $(LIB_CMSIS)/COMPONENT_CMSIS_DSP/Source/*.c) \
+              $(wildcard $(LIB_CMSIS)/COMPONENT_CMSIS_DSP/Source/*/*.c)
+LIB_C_SRCS += $(CMSIS_DSP_SRCS)
 
 # connectivity-utilities
 LIB_C_SRCS += \
@@ -635,7 +664,7 @@ ALL_CXX_SRCS := $(LIB_CXX_SRCS)
 ALL_S_SRCS   := $(LIB_S_SRCS)
 
 # Derive object paths: map each source file to BUILD_DIR/obj/<mangled-path>.o
-_src_to_obj = $(BUILD_DIR)/obj/$(subst /,_,$(subst $(abspath .)/,,$(abspath $1))).o
+_src_to_obj = $(BUILD_DIR)/obj/$(subst :,_,$(subst /,_,$(subst $(REPO_ROOT)/,,$(abspath $1)))).o
 
 C_OBJS   := $(foreach s,$(ALL_C_SRCS),$(call _src_to_obj,$(s)))
 CXX_OBJS := $(foreach s,$(ALL_CXX_SRCS),$(call _src_to_obj,$(s)))
@@ -661,7 +690,7 @@ BIN := $(BUILD_DIR)/$(APPNAME).bin
 # Build rules
 ################################################################################
 
-.PHONY: all clean flash size submodules
+.PHONY: all clean clean-model flash size submodules
 
 all: $(HEX) $(BIN) size
 
@@ -672,6 +701,7 @@ $(BUILD_DIR)/obj:
 define C_RULE
 $(call _src_to_obj,$(1)): $(1) | $(BUILD_DIR)/obj
 	@mkdir -p $$(dir $$@)
+	@echo "  CC  $(notdir $(1))"
 	@$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MF $$(@:.o=.d) -MT $$@ -o $$@ $$<
 endef
 $(foreach s,$(ALL_C_SRCS),$(eval $(call C_RULE,$(s))))
@@ -680,6 +710,7 @@ $(foreach s,$(ALL_C_SRCS),$(eval $(call C_RULE,$(s))))
 define CXX_RULE
 $(call _src_to_obj,$(1)): $(1) | $(BUILD_DIR)/obj
 	@mkdir -p $$(dir $$@)
+	@echo "  CXX $(notdir $(1))"
 	@$(CXX) $(CXXFLAGS) $(DEFINES) $(INCLUDES) -MF $$(@:.o=.d) -MT $$@ -o $$@ $$<
 endef
 $(foreach s,$(ALL_CXX_SRCS),$(eval $(call CXX_RULE,$(s))))
@@ -688,16 +719,19 @@ $(foreach s,$(ALL_CXX_SRCS),$(eval $(call CXX_RULE,$(s))))
 define S_RULE
 $(call _src_to_obj,$(1)): $(1) | $(BUILD_DIR)/obj
 	@mkdir -p $$(dir $$@)
+	@echo "  AS  $(notdir $(1))"
 	@$(AS) $(ASFLAGS) $(DEFINES) $(INCLUDES) -MF $$(@:.o=.d) -MT $$@ -o $$@ $$<
 endef
 $(foreach s,$(ALL_S_SRCS),$(eval $(call S_RULE,$(s))))
 
 # Link
+OBJS_RSP := $(BUILD_DIR)/objects.rsp
 $(ELF): $(ALL_OBJS) $(LDLIBS)
 	@echo "  LD  $@"
 	@mkdir -p $(dir $@)
+	$(file >$(OBJS_RSP),$(ALL_OBJS))
 	@$(LD) $(LDFLAGS) -o $@ \
-            -Wl,--start-group $(ALL_OBJS) $(LDLIBS) -Wl,--end-group $(LD_EXTRA_LIBS)
+            -Wl,--start-group @$(OBJS_RSP) $(LDLIBS) -Wl,--end-group $(LD_EXTRA_LIBS)
 # Post-processing
 $(HEX): $(ELF)
 	@echo "  HEX $@"
@@ -712,7 +746,18 @@ size: $(ELF)
 
 # Clean
 clean:
-	rm -rf $(BUILD_DIR)
+	$(RM_RF) $(BUILD_DIR)
+
+# Partial clean: remove project + model objects and link artifacts.
+# BSP and library .o files are kept so they don't need to be recompiled.
+clean-model:
+	@rm -f $(BUILD_DIR)/obj/proj_cm55_*.o 2>/dev/null || true
+	@rm -f $(BUILD_DIR)/$(APPNAME).elf \
+	       $(BUILD_DIR)/$(APPNAME).hex \
+	       $(BUILD_DIR)/$(APPNAME).bin \
+	       $(BUILD_DIR)/$(APPNAME).map \
+	       $(BUILD_DIR)/objects.rsp 2>/dev/null || true
+	@echo "[dc-va] Model objects cleaned"
 
 # Initialize all psoc-edge submodules
 submodules:
