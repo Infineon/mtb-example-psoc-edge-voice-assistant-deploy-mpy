@@ -52,12 +52,6 @@ can be deployed with it.
 
 Following are the full command reference, options, and config file documentation.
 
-.. toctree::
-   :maxdepth: 1
-   :hidden:
-
-   user_guide
-
 .. code-block:: console
 
    python deepcraft-voice-assistant-model-deploy.py [--config-file PATH] COMMAND [options]
