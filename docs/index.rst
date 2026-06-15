@@ -9,7 +9,7 @@ is structured for those who want to go further.
 
 .. toctree::
    :maxdepth: 2
-   :caption: System
+   :caption: SYSTEM
 
    system_overview
    requirements
@@ -18,13 +18,12 @@ is structured for those who want to go further.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Deployment enablements
+   :caption: DEPLOYMENT ENABLEMENTS
 
    enablement_cm33_mpy_ipc
 
 .. toctree::
    :maxdepth: 1
-   :caption: Support
+   :caption: SUPPORT
 
    troubleshooting
-

@@ -1,3 +1,9 @@
-sphinx>=7.2,<8.0
-sphinx-rtd-theme>=2.0,<3.0
+# Python packages used to build the documentation.
+# Install with: pip install -r docs/requirements.txt
+sphinx>=7.2.6,<9.0.0
+sphinx-tabs
+sphinxemoji
+sphinx-rtd-theme
+recommonmark>=0.6.0
+myst_parser
 sphinxcontrib-mermaid>=1.0,<2.0
