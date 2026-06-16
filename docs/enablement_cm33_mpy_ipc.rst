@@ -56,22 +56,18 @@ shipped in the repository for a quick test.
 
 Use the deployment tool to install the model assets, compile the CM55 firmware, and flash it to the board in one shot.
 
-**Configure the toolchain:**
+**Download the tool:**
 
-.. code-block:: ini
+.. code-block:: console
 
-   [tools]
-   llvm_dir = C:/llvm/LLVM-ET-Arm-19.1.5-Windows-x86_64
-
-You could also pass these as command-line options instead of using the config file and command-line has priority over the config file.
+   curl -O https://raw.githubusercontent.com/Infineon/mtb-example-psoc-edge-voice-assistant-deploy-mpy/main/tools/deepcraft-voice-assistant-model-deploy.py
+   curl -O https://raw.githubusercontent.com/Infineon/mtb-example-psoc-edge-voice-assistant-deploy-mpy/main/tools/deepcraft-voice-assistant-model-deploy.ini
 
 **Run the deploy command:**
 
 .. code-block:: powershell
 
-   python deepcraft-voice-assistant-model-deploy.py \
-       --config-file deepcraft-voice-assistant-model-deploy.ini \
-       all test_gpio_control
+   python deepcraft-voice-assistant-model-deploy.py all test_gpio_control
 
 Replace ``test_gpio_control`` with the path to your own model folder or ``.zip``
 exported.
@@ -192,7 +188,7 @@ Related repositories
      - Purpose
    * - `mtb-example-psoc-edge-voice-assistant-deploy-mpy
        <https://github.com/Infineon/mtb-example-psoc-edge-voice-assistant-deploy-mpy>`_
-     - CM55 firmware (C) and deployment tool (Python)
+     - CM55 firmware and deployment tool
    * - `micropython-deepcraft-model-interface
        <https://github.com/Infineon/micropython-deepcraft-model-interface>`_
      - MicroPython C extension — ``DEEPCRAFTModel`` and DEEPCRAFT engine
