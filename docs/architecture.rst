@@ -49,7 +49,7 @@ The deploy tool and the firmware repository sit side-by-side:
 Dual-core split
 ---------------
 
-The PSoC™ Edge E84 has two Arm cores with fixed roles:
+The PSOC™ Edge E84 has two Arm cores with fixed roles:
 
 .. list-table::
    :header-rows: 1
@@ -256,13 +256,13 @@ Related resources
 
    * - Resource
      - Link
-   * - PSoC™ Edge E84 AI Kit
+   * - PSOC™ Edge E84 AI Kit
      - https://www.infineon.com/KIT_PSE84_AI
    * - DEEPCRAFT™ Voice Assistant Cloud
      - https://deepcraft.infineon.com/solutions/voice-assistant
    * - ModusToolbox™
      - https://www.infineon.com/modustoolbox
-   * - MicroPython for PSoC™ Edge (installation)
+   * - MicroPython for PSOC™ Edge (installation)
      - https://ifx-micropython-psoc-edge.readthedocs.io/en/latest/psoc-edge/installation.html
    * - Application note AN235935
      - https://www.infineon.com/AN235935
