@@ -1,6 +1,6 @@
 # DEEPCRAFT Voice Assistant Model Deploy
 
-A single Python script that takes a [DEEPCRAFT™ Voice Assistant](https://deepcraft.infineon.com/solutions/voice-assistant) model and gets it running on a **PSoC™ Edge KIT_PSE84_AI** board — firmware is built and flashed in one command.
+A single Python script that takes a [DEEPCRAFT™ Voice Assistant](https://deepcraft.infineon.com/solutions/voice-assistant) model and gets it running on a **PSOC™ Edge KIT_PSE84_AI** board — firmware is built and flashed in one command.
 
 ---
 

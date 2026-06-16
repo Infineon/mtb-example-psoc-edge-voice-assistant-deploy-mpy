@@ -15,7 +15,7 @@ Requirements
 
 Hardware
 --------
-   - `PSoC™ Edge E84 AI Kit (KIT_PSE84_AI) <https://www.infineon.com/KIT_PSE84_AI>`_
+   - `PSOC™ Edge E84 AI Kit (KIT_PSE84_AI) <https://www.infineon.com/KIT_PSE84_AI>`_
 
 ----
 

@@ -27,7 +27,7 @@ Requirements
 
 **CM33**
 
-- `MicroPython for PSoC™ Edge <https://ifx-micropython-psoc-edge.readthedocs.io/en/latest/psoc-edge/installation.html>`_ flashed to the board
+- `MicroPython for PSOC™ Edge <https://ifx-micropython-psoc-edge.readthedocs.io/en/latest/psoc-edge/installation.html>`_ flashed to the board
 - A MicroPython IDE, e.g. `Thonny <https://thonny.org/>`_
 
 ----
@@ -74,7 +74,7 @@ exported.
 
 **3 - Flash MicroPython firmware**
 
-Follow the `MicroPython for PSoC™ Edge installation guide
+Follow the `MicroPython for PSOC™ Edge installation guide
 <https://ifx-micropython-psoc-edge.readthedocs.io/en/latest/psoc-edge/installation.html>`_ to flash the CM33 core with the MicroPython firmware.
 
 **4 - Run the MicroPython application**
@@ -192,6 +192,6 @@ Related repositories
    * - `micropython-deepcraft-model-interface
        <https://github.com/Infineon/micropython-deepcraft-model-interface>`_
      - MicroPython C extension — ``DEEPCRAFTModel`` and DEEPCRAFT engine
-   * - `MicroPython for PSoC™ Edge
+   * - `MicroPython for PSOC™ Edge
        <https://github.com/Infineon/micropython-psoc-edge>`_
-     - MicroPython port for PSoC™ Edge E84 (CM33)
+     - MicroPython port for PSOC™ Edge E84 (CM33)
