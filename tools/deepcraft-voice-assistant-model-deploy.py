@@ -44,10 +44,10 @@ except ImportError:
 # ---------------------------------------------------------------------------
 VERSION  = "0.2.0"
 REPO_URL = "https://github.com/Infineon/mtb-example-psoc-edge-voice-assistant-deploy-mpy.git"
-PROJ_CM55_REL  = "proj_cm55"
-VA_MODELS_REL  = os.path.join(PROJ_CM55_REL, "va_models")
+FIRMWARE_REL   = "cm55_firmware"
+VA_MODELS_REL  = os.path.join(FIRMWARE_REL, "va_models")
 MAKEFILE       = "Makefile"
-APPNAME        = "proj_cm55"
+APPNAME        = "cm55_firmware"
 BUILD_DIR_BASE = "build"
 _WIN = sys.platform in ("win32", "cygwin")
 DEFAULT_MAKE_CMD    = "mingw32-make" if _WIN else "make"
@@ -408,7 +408,7 @@ def get_make_var_names(cfg):
     }
 
 
-def run_make_target(*, proj_cm55_dir, make_cmd, target, llvm_dir=None, jobs=None, var_map=None):
+def run_make_target(*, firmware_dir, make_cmd, target, llvm_dir=None, jobs=None, var_map=None):
     cmd = [make_cmd, "-f", MAKEFILE, target]
     if jobs:
         cmd += ["-j", str(jobs)]
@@ -416,7 +416,7 @@ def run_make_target(*, proj_cm55_dir, make_cmd, target, llvm_dir=None, jobs=None
         for key, value in var_map.items():
             if value is not None and str(value) != "":
                 cmd.append(f"{key}={value}")
-    _run(cmd, cwd=proj_cm55_dir, env=_build_env(llvm_dir))
+    _run(cmd, cwd=firmware_dir, env=_build_env(llvm_dir))
 
 # ---------------------------------------------------------------------------
 def _git(*args, cwd=None):
@@ -691,7 +691,7 @@ def main():
     jobs      = getattr(args, "jobs", None) or multiprocessing.cpu_count()
     force     = getattr(args, "force",     False)
 
-    proj_cm55_dir = os.path.join(repo_dir, PROJ_CM55_REL)
+    firmware_dir = os.path.join(repo_dir, FIRMWARE_REL)
     va_models_dir = os.path.join(repo_dir, VA_MODELS_REL)
 
     if args.command in ("build", "all"):
@@ -730,7 +730,7 @@ def main():
     _section("Final step... Building and flashing to your device!")
     for target in targets:
         run_make_target(
-            proj_cm55_dir=proj_cm55_dir,
+            firmware_dir=firmware_dir,
             make_cmd=make_cmd,
             target=target,
             llvm_dir=llvm_dir,
