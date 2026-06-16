@@ -63,4 +63,4 @@ Deployment tool
    * - Tool
      - Version
    * - ``deepcraft-voice-assistant-model-deploy.py``
-     - 0.1.0
+     - 1.0.0

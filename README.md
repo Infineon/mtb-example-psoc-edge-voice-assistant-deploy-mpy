@@ -51,4 +51,4 @@ Other commands:
 
 ## Version
 
-`deepcraft-voice-assistant-model-deploy.py` v0.2.0
+`deepcraft-voice-assistant-model-deploy.py` v1.0.0
