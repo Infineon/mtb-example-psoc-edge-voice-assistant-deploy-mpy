@@ -10,21 +10,21 @@
 #
 # Prerequisites:
 #   - LLVM Embedded Toolchain for Arm 19.1.5 installed and added to path (example: export PATH=/opt/Tools/LLVM-ET-Arm-19.1.5-Linux-x86_64/bin:$PATH)
-#   - All library submodules present (psoc-edge/ populated)
-#   - cy_afe_configurator_settings.c generated into bsp-cfg/
-#     (copy from afe/GeneratedSource/ if the AFE configurator has been run)
+#   - All library submodules present (deps/psoc-edge/ populated)
+#   - cy_afe_configurator_settings.c generated into sources/bsp-cfg/
+#     (copy from sources/afe/GeneratedSource/ if the AFE configurator has been run)
 ################################################################################
 
 ################################################################################
 # Project settings
 ################################################################################
 
-APPNAME          ?= proj_cm55
+APPNAME          ?= cm55_firmware
 CONFIG           ?= Debug
 BOARD            ?= KIT_PSE84_AI
 DEEPCRAFT_PROJECT ?= test_gpio_control
 
-# Directory containing this Makefile (proj_cm55/)
+# Directory containing this Makefile (cm55_firmware/)
 BOARD_DIR        := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 # Build output directory
@@ -80,16 +80,16 @@ endif
 # Repository root -- used to keep object-file paths short (Windows MAX_PATH)
 REPO_ROOT := $(abspath ..)
 
-PSE_DIR := $(REPO_ROOT)/psoc-edge
+PSE_DIR := $(REPO_ROOT)/deps/psoc-edge
 
-# Application root (this Makefile lives in proj_cm55/)
+# Application root (this Makefile lives in cm55_firmware/)
 APP_DIR := $(abspath .)
 
 # Shared source across CM33/CM55
 SHARED_DIR := $(abspath ../shared)
 
 # MicroPython DeepCraft model interface
-DEEPCRAFT_DIR := $(abspath ../micropython-deepcraft-model-interface/deepcraft)
+DEEPCRAFT_DIR := $(abspath ../deps/micropython-deepcraft-model-interface/deepcraft)
 
 # BSP (board-specific files from psoc-edge)
 BSP_DIR := $(PSE_DIR)/TARGET_KIT_PSE84_AI
@@ -165,7 +165,7 @@ LDFLAGS := \
     -Wall \
     -Wl,--gc-sections \
     -Xlinker -L$(BSP_DIR)/COMPONENT_CM55/TOOLCHAIN_LLVM_ARM \
-    -Xlinker -L$(CURDIR)/bsp-cfg \
+    -Xlinker -L$(CURDIR)/sources/bsp-cfg \
     -T$(BSP_DIR)/COMPONENT_CM55/TOOLCHAIN_LLVM_ARM/pse84_ns_cm55.ld \
     -Wl,-Map,$(BUILD_DIR)/$(APPNAME).map
 
@@ -234,14 +234,17 @@ DEFINES := \
 
 INCLUDES := \
     -I$(APP_DIR) \
-    -I$(APP_DIR)/bsp-cfg \
+    -I$(APP_DIR)/includes \
+    -I$(APP_DIR)/sources \
+    -I$(APP_DIR)/sources/bsp-cfg \
+    -I$(APP_DIR)/deepcraft_wrapper \
     -I$(APP_DIR)/va_models/$(DEEPCRAFT_PROJECT) \
     -I$(SHARED_DIR)/include \
     -I$(DEEPCRAFT_DIR) \
     \
     -I$(BSP_DIR) \
     -I$(BSP_DIR)/bluetooth \
-    -I$(CURDIR)/bsp-cfg \
+    -I$(CURDIR)/sources/bsp-cfg \
     \
     -I$(LIB_ABS_RTOS)/include \
     -I$(LIB_ABS_RTOS)/include/COMPONENT_FREERTOS \
@@ -318,24 +321,24 @@ INCLUDES := \
 
 APP_C_SRCS := \
     $(APP_DIR)/main.c \
-    $(APP_DIR)/audio_enhancement.c \
-    $(APP_DIR)/deepcraft_wrapper.c \
-    $(APP_DIR)/ipc.c \
-    $(APP_DIR)/pdm_mic.c \
-    $(APP_DIR)/profiler.c \
-    $(APP_DIR)/retarget_io_init.c \
-    $(APP_DIR)/voice_assistant.c \
-    $(APP_DIR)/bsp-cfg/cy_afe_configurator_settings.c \
-    $(APP_DIR)/bsp-cfg/cycfg.c \
-    $(APP_DIR)/bsp-cfg/cycfg_clocks.c \
-    $(APP_DIR)/bsp-cfg/cycfg_dmas.c \
-    $(APP_DIR)/bsp-cfg/cycfg_peripheral_clocks.c \
-    $(APP_DIR)/bsp-cfg/cycfg_peripherals.c \
-    $(APP_DIR)/bsp-cfg/cycfg_pins.c \
-    $(APP_DIR)/bsp-cfg/cycfg_protection.c \
-    $(APP_DIR)/bsp-cfg/cycfg_qspi_memslot.c \
-    $(APP_DIR)/bsp-cfg/cycfg_routing.c \
-    $(APP_DIR)/bsp-cfg/cycfg_system.c \
+    $(APP_DIR)/sources/audio_enhancement.c \
+    $(APP_DIR)/deepcraft_wrapper/deepcraft_wrapper.c \
+    $(APP_DIR)/sources/ipc.c \
+    $(APP_DIR)/sources/pdm_mic.c \
+    $(APP_DIR)/sources/profiler.c \
+    $(APP_DIR)/sources/retarget_io_init.c \
+    $(APP_DIR)/sources/voice_assistant.c \
+    $(APP_DIR)/sources/bsp-cfg/cy_afe_configurator_settings.c \
+    $(APP_DIR)/sources/bsp-cfg/cycfg.c \
+    $(APP_DIR)/sources/bsp-cfg/cycfg_clocks.c \
+    $(APP_DIR)/sources/bsp-cfg/cycfg_dmas.c \
+    $(APP_DIR)/sources/bsp-cfg/cycfg_peripheral_clocks.c \
+    $(APP_DIR)/sources/bsp-cfg/cycfg_peripherals.c \
+    $(APP_DIR)/sources/bsp-cfg/cycfg_pins.c \
+    $(APP_DIR)/sources/bsp-cfg/cycfg_protection.c \
+    $(APP_DIR)/sources/bsp-cfg/cycfg_qspi_memslot.c \
+    $(APP_DIR)/sources/bsp-cfg/cycfg_routing.c \
+    $(APP_DIR)/sources/bsp-cfg/cycfg_system.c \
     $(SHARED_DIR)/source/COMPONENT_CM55/cm55_ipc_communication.c \
     $(DEEPCRAFT_DIR)/deepcraft_engine.c
 
@@ -456,7 +459,7 @@ LIB_CXX_SRCS += \
     $(LIB_ML_MW)/source/COMPONENT_ML_TFLM/mtb_ml_model.cpp
 
 # PSoC Edge PDL drivers
-# (79 of 91 sources; 12 v1-crypto + cy_pdl_srf confirmed GC'd in build/Debug/proj_cm55.map)
+# (79 of 91 sources; 12 v1-crypto + cy_pdl_srf confirmed GC'd in build/Debug/cm55_firmware.map)
 LIB_C_SRCS += \
     $(LIB_PSE)/pdl/drivers/source/cy_autanalog.c \
     $(LIB_PSE)/pdl/drivers/source/cy_autanalog_ac.c \
@@ -546,7 +549,7 @@ LIB_S_SRCS := \
 LIB_C_SRCS += \
     $(LIB_PSE)/pdl/devices/source/cy_device.c
 
-# PSoC Edge HAL (all 23 sources confirmed live in build/Debug/proj_cm55.map)
+# PSoC Edge HAL (all 23 sources confirmed live in build/Debug/cm55_firmware.map)
 LIB_C_SRCS += \
     $(LIB_PSE)/hal/source/mtb_hal_adc_sar.c \
     $(LIB_PSE)/hal/source/mtb_hal_clock.c \
@@ -572,7 +575,7 @@ LIB_C_SRCS += \
     $(LIB_PSE)/hal/source/mtb_hal_uart.c \
     $(LIB_PSE)/hal/source/mtb_hal_utils_impl.c
 
-# PSoC Edge device-utils syspm callbacks (all 7 confirmed live in build/Debug/proj_cm55.map)
+# PSoC Edge device-utils syspm callbacks (all 7 confirmed live in build/Debug/cm55_firmware.map)
 LIB_C_SRCS += \
     $(LIB_PSE)/device-utils/syspm/source/mtb_syspm_callbacks_dma.c \
     $(LIB_PSE)/device-utils/syspm/source/mtb_syspm_callbacks_i2s_tdm.c \
@@ -594,7 +597,7 @@ LIB_C_SRCS += \
     $(LIB_PSE)/pdl/drivers/third_party/COMPONENT_U55/src/ethosu_pmu.c
 
 # PSoC Edge Ethernet third-party: all 3 files (edd.c, edd_rx.c, edd_tx.c) confirmed
-# fully GC'd in build/Debug/proj_cm55.map (only .debug_* sections present).
+# fully GC'd in build/Debug/cm55_firmware.map (only .debug_* sections present).
 # CM55 voice assistant does not use Ethernet. Excluded.
 
 # mtb-ipc
@@ -740,7 +743,7 @@ clean:
 
 # Initialize all psoc-edge submodules
 submodules:
-	git -C $(abspath ..) submodule update --init --jobs 8 $(abspath ..)/psoc-edge
+	git -C $(abspath ..) submodule update --init --jobs 8 $(abspath ..)/deps/psoc-edge
 
 ## Openocd reusable flashing target
 
@@ -752,8 +755,8 @@ SERIAL_ADAPTER_CMD = -c "adapter serial $(DEV_SERIAL_NUMBER)"
 endif
 
 OPENOCD_OPEN_CMDS = \
-	-s $(BOARD_DIR)/bsp-cfg \
-	-c "set QSPI_FLASHLOADER $(BOARD_DIR)/bsp-cfg/PSE84_SMIF.FLM" \
+	-s $(BOARD_DIR)/sources/bsp-cfg \
+	-c "set QSPI_FLASHLOADER $(BOARD_DIR)/sources/bsp-cfg/PSE84_SMIF.FLM" \
 	-c "source [find interface/kitprog3.cfg]" \
 	$(SERIAL_ADAPTER_CMD) \
 	-c "transport select swd" \
@@ -774,7 +777,7 @@ define flash_target
 endef
 
 BUILD ?= build/Debug
-deploy: $(BUILD)/proj_cm55.elf
+deploy: $(BUILD)/$(APPNAME).elf
 	$(call flash_target,$<)
 
 # Pull in generated dependency files

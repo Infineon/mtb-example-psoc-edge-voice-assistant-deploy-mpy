@@ -1,69 +1,69 @@
 [submodule "micropython-deepcraft-model-interface"]
-	path = micropython-deepcraft-model-interface
+	path = deps/micropython-deepcraft-model-interface
 	url = https://github.com/Infineon/micropython-deepcraft-model-interface
 [submodule "psoc-edge/abstraction-rtos"]
-	path = psoc-edge/abstraction-rtos
+	path = deps/psoc-edge/abstraction-rtos
 	url = https://github.com/Infineon/abstraction-rtos.git
 [submodule "psoc-edge/async-transfer"]
-	path = psoc-edge/async-transfer
+	path = deps/psoc-edge/async-transfer
 	url = https://github.com/Infineon/async-transfer.git
 [submodule "psoc-edge/audio-front-end"]
-	path = psoc-edge/audio-front-end
+	path = deps/psoc-edge/audio-front-end
 	url = https://github.com/Infineon/audio-front-end.git
 [submodule "psoc-edge/audio-voice-core"]
-	path = psoc-edge/audio-voice-core
+	path = deps/psoc-edge/audio-voice-core
 	url = https://github.com/Infineon/audio-voice-core.git
 [submodule "psoc-edge/bt-fw-mur-cyw55513"]
-	path = psoc-edge/bt-fw-mur-cyw55513
+	path = deps/psoc-edge/bt-fw-mur-cyw55513
 	url = https://github.com/Infineon/bt-fw-mur-cyw55513.git
 [submodule "psoc-edge/clib-support"]
-	path = psoc-edge/clib-support
+	path = deps/psoc-edge/clib-support
 	url = https://github.com/Infineon/clib-support.git
 [submodule "psoc-edge/cmsis"]
-	path = psoc-edge/cmsis
+	path = deps/psoc-edge/cmsis
 	url = https://github.com/Infineon/cmsis.git
 [submodule "psoc-edge/connectivity-utilities"]
-	path = psoc-edge/connectivity-utilities
+	path = deps/psoc-edge/connectivity-utilities
 	url = https://github.com/Infineon/connectivity-utilities.git
 [submodule "psoc-edge/core-lib"]
-	path = psoc-edge/core-lib
+	path = deps/psoc-edge/core-lib
 	url = https://github.com/Infineon/core-lib.git
 [submodule "psoc-edge/core-make"]
-	path = psoc-edge/core-make
+	path = deps/psoc-edge/core-make
 	url = https://github.com/Infineon/core-make.git
 [submodule "psoc-edge/freertos"]
-	path = psoc-edge/freertos
+	path = deps/psoc-edge/freertos
 	url = https://github.com/Infineon/freertos.git
 [submodule "psoc-edge/ml-middleware"]
-	path = psoc-edge/ml-middleware
+	path = deps/psoc-edge/ml-middleware
 	url = https://github.com/Infineon/ml-middleware.git
 [submodule "psoc-edge/ml-tflite-micro"]
-	path = psoc-edge/ml-tflite-micro
+	path = deps/psoc-edge/ml-tflite-micro
 	url = https://github.com/Infineon/ml-tflite-micro.git
 [submodule "psoc-edge/mtb-dsl-pse8xxgp"]
-	path = psoc-edge/mtb-dsl-pse8xxgp
+	path = deps/psoc-edge/mtb-dsl-pse8xxgp
 	url = https://github.com/Infineon/mtb-dsl-pse8xxgp.git
 [submodule "psoc-edge/mtb-ipc"]
-	path = psoc-edge/mtb-ipc
+	path = deps/psoc-edge/mtb-ipc
 	url = https://github.com/Infineon/mtb-ipc.git
 [submodule "psoc-edge/mtb-srf"]
-	path = psoc-edge/mtb-srf
+	path = deps/psoc-edge/mtb-srf
 	url = https://github.com/Infineon/mtb-srf.git
 [submodule "psoc-edge/retarget-io"]
-	path = psoc-edge/retarget-io
+	path = deps/psoc-edge/retarget-io
 	url = https://github.com/Infineon/retarget-io.git
 [submodule "psoc-edge/se-rt-services-utils"]
-	path = psoc-edge/se-rt-services-utils
+	path = deps/psoc-edge/se-rt-services-utils
 	url = https://github.com/Infineon/se-rt-services-utils.git
 [submodule "psoc-edge/serial-memory"]
-	path = psoc-edge/serial-memory
+	path = deps/psoc-edge/serial-memory
 	url = https://github.com/Infineon/serial-memory.git
 [submodule "psoc-edge/speech-onset-detection"]
-	path = psoc-edge/speech-onset-detection
+	path = deps/psoc-edge/speech-onset-detection
 	url = https://github.com/Infineon/speech-onset-detection.git
 [submodule "psoc-edge/voice-assistant"]
-	path = psoc-edge/voice-assistant
+	path = deps/psoc-edge/voice-assistant
 	url = https://github.com/Infineon/voice-assistant.git
 [submodule "psoc-edge/TARGET_KIT_PSE84_AI"]
-	path = psoc-edge/TARGET_KIT_PSE84_AI
+	path = deps/psoc-edge/TARGET_KIT_PSE84_AI
 	url = https://github.com/Infineon/TARGET_KIT_PSE84_AI.git
