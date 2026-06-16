@@ -1,7 +1,7 @@
 project = "DEEPCRAFT Voice Assistant Model Deploy"
 author = "Infineon Technologies"
 copyright = "2026 Infineon Technologies"
-release = "0.2.0"
+release = "1.0.0"
 
 extensions = [
     "myst_parser",
