@@ -5,7 +5,7 @@ Requirements
 
 .. warning::
    The deployment tool (``deepcraft-voice-assistant-model-deploy.py``) is currently
-   supported on **Windows only**. Linux and macOS have not been tested.
+   supported on **Windows only**. Linux and macOS have not been tested and hence may or may not work on these platforms.
 
 .. contents::
    :local:
@@ -36,7 +36,6 @@ Deployment tool
 ---------------
 
 - **Python 3.8+** — verify with ``python --version``
-- **Git** — must be on PATH
 - **requests** *(optional)* — enables auto-download of OpenOCD:
 
   .. code-block:: console
@@ -55,7 +54,7 @@ Build toolchain
 The CM55 firmware must be compiled with the
 `LLVM Embedded Toolchain for Arm v19.1.5 <https://github.com/ARM-software/LLVM-embedded-toolchain-for-Arm/releases/tag/release-19.1.5>`_.
 This is the only supported compiler version and is required regardless of which
-enablement you are using.
+enablement you are using. If you are using the deployment tool, this is auto-downloaded if not already present, but can also be installed manually.
 
 ----
 
@@ -63,7 +62,7 @@ enablement you are using.
 
 `MinGW <https://sourceforge.net/projects/mingw/>`_ provides ``mingw32-make``, which is required
 to compile the firmware on Windows. After installation, add ``<MinGW>\\bin`` to your
-system PATH so the tool is reachable from the command line.
+system PATH so the tool is reachable from the command line. If you are using the deployment tool, this is auto-downloaded, but can also be installed manually.
 
 ----
 
