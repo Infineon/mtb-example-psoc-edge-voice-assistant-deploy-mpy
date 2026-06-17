@@ -343,8 +343,16 @@ def get_make_cmd(cfg, cli_override=None):
     # CLI flag or config file takes priority — no prompts needed
     cmd = cli_override or cfg_get(cfg, "tools", "make_cmd", DEFAULT_MAKE_CMD)
     configured_explicitly = bool(cli_override or cfg_get(cfg, "tools", "make_cmd"))
-    if configured_explicitly and shutil.which(cmd):
-        return cmd
+    if configured_explicitly:
+        found_explicit = shutil.which(cmd)
+        if found_explicit:
+            return found_explicit
+
+    # PATH-first auto detection for default flow
+    found_default = shutil.which(DEFAULT_MAKE_CMD)
+    if found_default:
+        print_f(f"   ✓ Great! Found {DEFAULT_MAKE_CMD} in PATH")
+        return found_default
 
     # Always ask the user first
     if _prompt_yes_no(f"   Have you already manually installed {DEFAULT_MAKE_CMD}?"):
@@ -460,6 +468,19 @@ def clone_or_update(repo_url, dest):
         parent = os.path.dirname(os.path.abspath(dest))
         os.makedirs(parent, exist_ok=True)
         _git_quiet("clone", "--branch", branch, "--single-branch", "--recurse-submodules", repo_url, dest)
+
+def ensure_local_config_from_repo(repo_dir):
+    """Copy config template from cloned repo tools/ to script directory if missing."""
+    if os.path.isfile(_LOCAL_CONFIG_FILE):
+        return
+    src_cfg = os.path.join(repo_dir, "tools", "deepcraft-voice-assistant-model-deploy.ini")
+    if not os.path.isfile(src_cfg):
+        return
+    try:
+        shutil.copy2(src_cfg, _LOCAL_CONFIG_FILE)
+        print_f(f"[dc-va] Copied config template to: {_LOCAL_CONFIG_FILE}")
+    except Exception as e:
+        print_f(f"[dc-va] WARNING: Could not copy config template: {e}")
 
 # ---------------------------------------------------------------------------
 _TIMESTAMP_RE = re.compile(r'_\d{2}-\d{2}-\d{4}_\d{8}_\d{6}$')
@@ -695,8 +716,9 @@ def main():
     va_models_dir = os.path.join(repo_dir, VA_MODELS_REL)
 
     if args.command in ("build", "all"):
-        _section("Getting the latest sources")
+        _section("Getting the latest sources... (This might take a while)")
         clone_or_update(REPO_URL, repo_dir)
+        ensure_local_config_from_repo(repo_dir)
         print_f("   ✓ Sources are ready!")
 
     _section("Let's set up required tools")
