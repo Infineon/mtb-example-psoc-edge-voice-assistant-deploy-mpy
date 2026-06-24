@@ -785,6 +785,7 @@ def main():
             var_map=make_vars,
         )
     print_f("\n   ✓ All done! Your build is ready to roll.")
+    print_f("   Find next steps in: https://mpy-va-deploy.readthedocs.io/en/latest/enablement_cm33_mpy_ipc.html#quickstart")
 
 
 if __name__ == "__main__":
