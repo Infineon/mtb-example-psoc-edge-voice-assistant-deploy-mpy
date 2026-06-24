@@ -52,6 +52,9 @@ Design and export a wake-word and command model from the
 `DEEPCRAFT™ Voice Assistant cloud tool <https://deepcraft.infineon.com/solutions/voice-assistant>`_. This step is not needed if you are using the pre-built ``test_gpio_control`` model
 shipped in the repository for a quick test.
 
+.. warning::
+    While extracting the model from the .zip, kindly refrain from renaming any files or folders.
+
 **2 - Deploy model to the board**
 
 Use the deployment tool to install the model assets, compile the CM55 firmware, and flash it to the board in one shot.
@@ -83,7 +86,7 @@ Open MicroPython supported IDE (e.g. Thonny), and copy the below MicroPython cod
 .. code-block:: python
 
    from machine import IPC, Pin
-   from deepcraft_model import DEEPCRAFTModel
+   from deepcraft_model import DeepcraftModel
    import time
 
    # ---------------------------------------------------------------------------
@@ -100,27 +103,27 @@ Open MicroPython supported IDE (e.g. Thonny), and copy the below MicroPython cod
 
    # ---------------------------------------------------------------------------
    # Transport setup — IPC
-   # DEEPCRAFTModel constructor calls ipc.init() automatically.
+   # DeepcraftModel constructor calls ipc.init() automatically.
    # ---------------------------------------------------------------------------
    ipc = IPC(src_core=IPC.CM33, target_core=IPC.CM55)
 
    # ---------------------------------------------------------------------------
-   # DEEPCRAFTModel — wraps the transport and exposes VA events
+   # DeepcraftModel — wraps the transport and exposes VA events
    # ---------------------------------------------------------------------------
-   model = DEEPCRAFTModel(ipc)
+   model = DeepcraftModel(ipc)
 
 
    # ---------------------------------------------------------------------------
    # Event callback — invoked by the wrapper with (va_model_events_t, value)
    # ---------------------------------------------------------------------------
    def on_va_event(event, value):
-       if event == DEEPCRAFTModel.VA_EVENT_READY:
+       if event == DeepcraftModel.VA_EVENT_READY:
            print("[HOST] VA ready and listening")
 
-       elif event == DEEPCRAFTModel.VA_EVENT_WAKEWORD_DETECTED:
+       elif event == DeepcraftModel.VA_EVENT_WAKEWORD_DETECTED:
            print("[HOST] Wake-word detected!")
 
-       elif event == DEEPCRAFTModel.VA_EVENT_INTENT:
+       elif event == DeepcraftModel.VA_EVENT_INTENT:
            intent_idx = value
            print("[HOST] Intent received: index =", intent_idx)
            action = INTENT_ACTIONS.get(intent_idx)
@@ -129,13 +132,13 @@ Open MicroPython supported IDE (e.g. Thonny), and copy the below MicroPython cod
            else:
                print("[HOST] Unknown intent index:", intent_idx)
 
-       elif event == DEEPCRAFTModel.VA_EVENT_TIMEOUT:
+       elif event == DeepcraftModel.VA_EVENT_TIMEOUT:
            print("[HOST] Command timeout — say the wake-word again")
 
-       elif event == DEEPCRAFTModel.VA_EVENT_STOPPED:
+       elif event == DeepcraftModel.VA_EVENT_STOPPED:
            print("[HOST] VA stopped")
 
-       elif event == DEEPCRAFTModel.VA_EVENT_ERROR:
+       elif event == DeepcraftModel.VA_EVENT_ERROR:
            print("[HOST] Fatal VA error")
 
        else:
@@ -159,7 +162,7 @@ Open MicroPython supported IDE (e.g. Thonny), and copy the below MicroPython cod
    # Main event loop
    # ---------------------------------------------------------------------------
    while True:
-       if model.state() == DEEPCRAFTModel.STATE_IDLE:
+       if model.state() == DeepcraftModel.STATE_IDLE:
            break
        time.sleep_ms(10)
 
@@ -190,7 +193,7 @@ Related repositories
      - CM55 firmware and deployment tool
    * - `micropython-deepcraft-model-interface
        <https://github.com/Infineon/micropython-deepcraft-model-interface>`_
-     - MicroPython C extension — ``DEEPCRAFTModel`` and DEEPCRAFT engine
+     - MicroPython C extension — ``DeepcraftModel`` and DEEPCRAFT engine
    * - `MicroPython for PSOC™ Edge
        <https://github.com/Infineon/micropython-psoc-edge>`_
      - MicroPython port for PSOC™ Edge E84 (CM33)
