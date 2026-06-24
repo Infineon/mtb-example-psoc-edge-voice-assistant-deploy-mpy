@@ -52,11 +52,14 @@ BUILD_DIR_BASE = "build"
 _WIN = sys.platform in ("win32", "cygwin")
 DEFAULT_MAKE_CMD    = "mingw32-make" if _WIN else "make"
 _SCRIPT_DIR         = os.path.dirname(os.path.abspath(__file__))
+_DEPS_DIR_NAME      = "va-mpy"
+# Base directory for everything this script downloads/installs (repo clone,
+# toolchains and archives). Overridable via --deps-dir or [tools] deps_dir.
+_DEPS_DIR           = os.path.join(_SCRIPT_DIR, _DEPS_DIR_NAME)
 _REPO_FOLDER_NAME   = "mtb-example-psoc-edge-voice-assistant-deploy-mpy"
-DEFAULT_REPO_DIR    = os.path.join(_SCRIPT_DIR, _REPO_FOLDER_NAME)
+DEFAULT_REPO_DIR    = os.path.join(_DEPS_DIR, _REPO_FOLDER_NAME)
 _LOCAL_CONFIG_FILE  = os.path.join(_SCRIPT_DIR, "deepcraft-voice-assistant-model-deploy.ini")
 DEFAULT_CONFIG_FILE = _LOCAL_CONFIG_FILE if os.path.isfile(_LOCAL_CONFIG_FILE) else os.path.join(os.path.expanduser("~"), ".deepcraft-voice-assistant-model-deploy.ini")
-_OCD_DOWNLOAD_DIR   = os.path.join(_SCRIPT_DIR, "openocd")
 _OCD_VERSION_TAG    = "release-v5.11.0"
 _OCD_VERSION_STR    = "5.11.0.4042"
 _OCD_BASE_NAME      = f"openocd-{_OCD_VERSION_STR}-"
@@ -65,14 +68,25 @@ _OCD_SUPPORTED_VERS = ["0.12.0+dev-5.8.0.3960", "0.12.0+dev-5.11.0.4042", "0.12.
 _LLVM_VERSION = "19.1.5"
 _LLVM_BASE_NAME = f"LLVM-ET-Arm-{_LLVM_VERSION}-Windows-x86_64"
 _LLVM_DOWNLOAD_URL = f"https://github.com/ARM-software/LLVM-embedded-toolchain-for-Arm/releases/download/release-{_LLVM_VERSION}/{_LLVM_BASE_NAME}.zip"
-_LLVM_INSTALL_DIR = os.path.join(os.path.expanduser("~"), "llvm")
+_LLVM_INSTALL_SUBDIR = "llvm"  # subfolder under the deps dir
+def _llvm_install_dir():
+    return os.path.join(_DEPS_DIR, _LLVM_INSTALL_SUBDIR)
 # Well-known default install locations to auto-discover before prompting
-_LLVM_SEARCH_PATHS = [
-    os.path.join("C:\\", "llvm", _LLVM_BASE_NAME),
-    os.path.join(os.path.expanduser("~"), "llvm", _LLVM_BASE_NAME),
-    os.path.join(_SCRIPT_DIR, _LLVM_BASE_NAME),
-]
+def _llvm_search_paths():
+    return [
+        os.path.join(_DEPS_DIR, _LLVM_INSTALL_SUBDIR, _LLVM_BASE_NAME),
+        os.path.join("C:\\", "llvm", _LLVM_BASE_NAME),
+        os.path.join(os.path.expanduser("~"), "llvm", _LLVM_BASE_NAME),
+        os.path.join(_SCRIPT_DIR, _LLVM_BASE_NAME),
+    ]
 def print_f(*a, **kw): print(*a, **kw, flush=True)
+
+def _set_deps_dir(path):
+    """Point all downloads/installs at `path`, creating it if needed."""
+    global _DEPS_DIR
+    _DEPS_DIR = os.path.abspath(os.path.expanduser(path))
+    os.makedirs(_DEPS_DIR, exist_ok=True)
+    return _DEPS_DIR
 
 def _section(title):
     """Print a clear section header."""
@@ -138,7 +152,7 @@ def _download_file(url, dest_path):
 
 def _unique_install_dir(base_name):
     """Generate a unique install directory, avoiding collisions with locks/existing folders."""
-    base_dir = os.path.join(os.path.expanduser("~"), base_name)
+    base_dir = os.path.join(_DEPS_DIR, base_name)
     if not os.path.exists(base_dir):
         return base_dir
     stamp = int(time.time())
@@ -150,15 +164,16 @@ def _unique_install_dir(base_name):
         idx += 1
 
 def _install_llvm():
-    """Download, extract, and install LLVM 19.1.5 to ~/llvm/."""
-    archive = os.path.join(_SCRIPT_DIR, f"{_LLVM_BASE_NAME}.zip")
+    """Download, extract, and install the LLVM toolchain under the deps dir."""
+    llvm_root = _llvm_install_dir()
+    archive = os.path.join(_DEPS_DIR, f"{_LLVM_BASE_NAME}.zip")
     _download_file(_LLVM_DOWNLOAD_URL, archive)
     print_f("[dc-va] Extracting LLVM ...")
-    os.makedirs(_LLVM_INSTALL_DIR, exist_ok=True)
+    os.makedirs(llvm_root, exist_ok=True)
     with zipfile.ZipFile(archive) as zf:
-        zf.extractall(_LLVM_INSTALL_DIR)
+        zf.extractall(llvm_root)
     os.remove(archive)
-    llvm_path = os.path.join(_LLVM_INSTALL_DIR, _LLVM_BASE_NAME)
+    llvm_path = os.path.join(llvm_root, _LLVM_BASE_NAME)
     if not os.path.isdir(llvm_path):
         _fatal(f"LLVM extraction failed: expected folder not found at {llvm_path}")
     print_f(f"[dc-va] LLVM installed -> {llvm_path}")
@@ -171,11 +186,11 @@ def _install_mingw():
     mingw_url = "https://github.com/brechtsanders/winlibs_mingw/releases/download/14.2.0posix-18.1.8-12.0.0-ucrt-r1/winlibs-x86_64-posix-seh-gcc-14.2.0-mingw-w64ucrt-12.0.0-r1.zip"
     print_f("[dc-va] Downloading MinGW-w64 14.2.0 (winlibs) ...")
     print_f("         This may take a few minutes (~300MB)")
-    archive = os.path.join(_SCRIPT_DIR, "mingw-w64.zip")
+    archive = os.path.join(_DEPS_DIR, "mingw-w64.zip")
     _download_file(mingw_url, archive)
     print_f("[dc-va] Extracting MinGW (this may take a few minutes) ...")
     try:
-        with tempfile.TemporaryDirectory(dir=_SCRIPT_DIR, prefix="mingw_extract_") as extract_root:
+        with tempfile.TemporaryDirectory(dir=_DEPS_DIR, prefix="mingw_extract_") as extract_root:
             with zipfile.ZipFile(archive) as zf:
                 members = zf.infolist()
                 total = len(members)
@@ -241,7 +256,7 @@ def ensure_llvm(cfg, config_path, cli_override=None):
     # Always ask the user first
     if _prompt_yes_no(f"   Have you already manually installed LLVM Embedded Toolchain for Arm {_LLVM_VERSION}?"):
         # Try well-known locations silently first, then ask for path
-        for candidate in _LLVM_SEARCH_PATHS:
+        for candidate in _llvm_search_paths():
             if os.path.isdir(candidate):
                 print_f(f"   ✓ Great! Found LLVM at: {candidate}")
                 return candidate
@@ -270,7 +285,7 @@ def _ocd_exe_name():
     return "openocd.exe" if _WIN else "openocd"
 
 def _ocd_local_bin():
-    return os.path.join(_OCD_DOWNLOAD_DIR, "bin", _ocd_exe_name())
+    return os.path.join(_DEPS_DIR, "openocd", "bin", _ocd_exe_name())
 
 def _ocd_in_path():
     exe = shutil.which(_ocd_exe_name())
@@ -296,7 +311,7 @@ def _ocd_download_and_install():
         suffix, ext = "linux", ".tar.gz"
     file_name = _OCD_BASE_NAME + suffix + ext
     url       = _OCD_URL_BASE + file_name
-    archive   = os.path.join(_SCRIPT_DIR, file_name)
+    archive   = os.path.join(_DEPS_DIR, file_name)
     print_f(f"[dc-va] Downloading OpenOCD {_OCD_VERSION_STR} ...")
     print_f(f"         {url}")
     resp = _requests.get(url, stream=True)
@@ -308,10 +323,10 @@ def _ocd_download_and_install():
     print_f("[dc-va] Extracting OpenOCD ...")
     if ext == ".tar.gz":
         with tarfile.open(archive) as tf:
-            tf.extractall(_SCRIPT_DIR)
+            tf.extractall(_DEPS_DIR)
     else:
         with zipfile.ZipFile(archive) as zf:
-            zf.extractall(_SCRIPT_DIR)
+            zf.extractall(_DEPS_DIR)
     os.remove(archive)
     exe = _ocd_local_bin()
     if not os.path.isfile(exe):
@@ -558,7 +573,7 @@ toolchain, drops your model in, and drives the Makefile build/flash for you.
 
 USAGE
 -----
-  python deepcraft-voice-assistant-model-deploy.py [--config-file PATH] COMMAND [options]
+  python deepcraft-voice-assistant-model-deploy.py [--config-file PATH] [--deps-dir PATH] COMMAND [options]
 
 COMMANDS
 --------
@@ -609,6 +624,9 @@ COMMANDS
 GLOBAL OPTIONS
 --------------
   --config-file PATH   Optional config file (default: deepcraft-voice-assistant-model-deploy.ini next to script)
+  --deps-dir    PATH   Folder for everything this script downloads/installs
+                       (repo clone, LLVM, MinGW, OpenOCD, archives).
+                       Default: <script dir>/va-mpy
   --version            Print version and exit
 
 CONFIG FILE  (optional -- most users never need this)
@@ -621,6 +639,7 @@ CONFIG FILE  (optional -- most users never need this)
   llvm_dir      = C:\\llvm\\LLVM-ET-Arm-{_LLVM_VERSION}-Windows-x86_64
   make_cmd      = mingw32-make
   openocd       = C:\\path\\to\\openocd.exe
+  deps_dir      = C:\\path\\to\\va-mpy   ; where downloads/installs go
 
   [make_targets]            ; override only if your repo uses different names
   build         = all
@@ -644,6 +663,8 @@ def _parser():
     p.add_argument("--version", action="version", version=f"deepcraft-voice-assistant-model-deploy {VERSION}")
     p.add_argument("--config-file", default=DEFAULT_CONFIG_FILE, metavar="PATH",
         help=f"Config file path (default: {DEFAULT_CONFIG_FILE})")
+    p.add_argument("--deps-dir", default=None, metavar="PATH",
+        help=f"Directory for downloaded/installed dependencies (default: {_DEPS_DIR})")
     sub = p.add_subparsers(dest="command", metavar="COMMAND")
     sub.required = True
 
@@ -706,7 +727,11 @@ def main():
 
     cfg = load_config(args.config_file)
 
-    repo_dir = DEFAULT_REPO_DIR
+    deps_dir = getattr(args, "deps_dir", None) or cfg_get(cfg, "tools", "deps_dir") or _DEPS_DIR
+    _set_deps_dir(deps_dir)
+    print_f(f"[dc-va] Dependencies directory: {_DEPS_DIR}")
+
+    repo_dir = os.path.join(_DEPS_DIR, _REPO_FOLDER_NAME)
     build_config = cfg_get(cfg, "project", "build_config") or "Debug"
     serial    = getattr(args, "serial",    None) or cfg_get(cfg, "board", "serial_number")
     jobs      = getattr(args, "jobs", None) or multiprocessing.cpu_count()
