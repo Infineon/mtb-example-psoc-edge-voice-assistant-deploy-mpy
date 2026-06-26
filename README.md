@@ -42,9 +42,9 @@ Other commands:
 
 | Guide | Contents |
 |-------|----------|
-| [Quick Start](docs/enablement_cm33_mpy_ipc.rst) | CM33 MicroPython over IPC — requirements, steps, example code |
-| [Deployment Tool](docs/deployment_tool.rst) | Installation, commands, options, config file |
-| [Requirements](docs/requirements.rst) | Hardware, toolchain, and software prerequisites |
+| [Quick Start](https://mpy-va-deploy.readthedocs.io/en/latest/enablement_cm33_mpy_ipc.html#quickstart) | CM33 MicroPython over IPC — requirements, steps, example code |
+| [Deployment Tool](https://mpy-va-deploy.readthedocs.io/en/latest/deployment_tool.html) | Installation, commands, options, config file |
+| [Requirements](https://mpy-va-deploy.readthedocs.io/en/latest/requirements.html) | Hardware, toolchain, and software prerequisites |
 | [MicroPython Interface](https://github.com/Infineon/micropython-deepcraft-model-interface) | CM33-side MicroPython API |
 
 ---
