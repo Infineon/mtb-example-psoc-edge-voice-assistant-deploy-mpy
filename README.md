@@ -42,9 +42,9 @@ Other commands:
 
 | Guide | Contents |
 |-------|----------|
-| [Quick Start](mtb-example-psoc-edge-voice-assistant-deploy-mpy/docs/enablement_cm33_mpy_ipc.rst) | CM33 MicroPython over IPC — requirements, steps, example code |
-| [Deployment Tool](mtb-example-psoc-edge-voice-assistant-deploy-mpy/docs/deployment_tool.rst) | Installation, commands, options, config file |
-| [Requirements](mtb-example-psoc-edge-voice-assistant-deploy-mpy/docs/requirements.rst) | Hardware, toolchain, and software prerequisites |
+| [Quick Start](docs/enablement_cm33_mpy_ipc.rst) | CM33 MicroPython over IPC — requirements, steps, example code |
+| [Deployment Tool](docs/deployment_tool.rst) | Installation, commands, options, config file |
+| [Requirements](docs/requirements.rst) | Hardware, toolchain, and software prerequisites |
 | [MicroPython Interface](https://github.com/Infineon/micropython-deepcraft-model-interface) | CM33-side MicroPython API |
 
 ---
