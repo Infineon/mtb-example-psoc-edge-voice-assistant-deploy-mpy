@@ -472,8 +472,7 @@ def _ensure_git_longpaths():
 def clone_or_update(repo_url, dest):
     """Clone the repo if missing; otherwise refresh it to match the remote.
     """
-    #ToDo: Should be main once merged.
-    branch = "en-automation-py-script"
+    branch = "main"
     _ensure_git_longpaths()
     if os.path.isdir(os.path.join(dest, ".git")):
         _git_quiet("fetch", "origin", branch, cwd=dest)
