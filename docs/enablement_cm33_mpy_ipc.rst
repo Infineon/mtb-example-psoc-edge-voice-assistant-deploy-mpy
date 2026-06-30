@@ -63,7 +63,7 @@ Use the deployment tool to install the model assets, compile the CM55 firmware, 
 
 .. code-block:: console
 
-   curl -s -L -o https://raw.githubusercontent.com/Infineon/mtb-example-psoc-edge-voice-assistant-deploy-mpy/main/tools/deepcraft-voice-assistant-model-deploy.py
+   curl -s -L -o deepcraft-voice-assistant-model-deploy.py https://raw.githubusercontent.com/Infineon/mtb-example-psoc-edge-voice-assistant-deploy-mpy/main/tools/deepcraft-voice-assistant-model-deploy.py
 
 **Run the deploy command:**
 
