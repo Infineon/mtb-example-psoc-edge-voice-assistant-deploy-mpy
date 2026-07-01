@@ -540,6 +540,38 @@ def install_model(model_path, va_models_dir, force=False):
     print_f(f"   ✓ Model is ready!")
     return project_name
 
+def _list_models(va_models_dir):
+    """Return the sorted names of models (subdirectories) installed in va_models/."""
+    if not os.path.isdir(va_models_dir):
+        return []
+    return sorted(
+        name for name in os.listdir(va_models_dir)
+        if os.path.isdir(os.path.join(va_models_dir, name))
+    )
+
+def _show_models(va_models_dir):
+    _section("Models installed in va_models/")
+    models = _list_models(va_models_dir)
+    if not models:
+        print_f(f"   No models found in: {va_models_dir}")
+        print_f("   Install one with:  build <MODEL_ASSETS_PATH>")
+        return
+    for name in models:
+        print_f(f"   - {name}")
+
+def _clean_model(va_models_dir, model_name):
+    _section(f"Removing model '{model_name}'")
+    models = _list_models(va_models_dir)
+    if model_name not in models:
+        if models:
+            _fatal(
+                f"Model '{model_name}' not found in va_models/.\n"
+                f"  Available models: {', '.join(models)}"
+            )
+        _fatal(f"No models are installed in: {va_models_dir}")
+    shutil.rmtree(os.path.join(va_models_dir, model_name))
+    print_f(f"   ✓ Removed model '{model_name}'")
+
 def _build_env(llvm_dir=None):
     env = os.environ.copy()
     if llvm_dir:
@@ -612,10 +644,12 @@ COMMANDS
         --serial    SN           KitProg3 adapter serial (needed with multiple boards)
 
   clean  [options]
-      Remove build artifacts.
+      Remove build artifacts, or remove an installed model from va_models/.
 
       Options:
         --make-cmd  CMD          GNU make executable (default: mingw32-make)
+        --model     NAME         Remove the named model directory from va_models/
+                                 (run '--show-models' to see the names)
 
   help
       Show this help text.
@@ -626,6 +660,7 @@ GLOBAL OPTIONS
   --deps-dir    PATH   Folder for everything this script downloads/installs
                        (repo clone, LLVM, MinGW, OpenOCD, archives).
                        Default: <script dir>/va-mpy
+  --show-models        List all models installed in va_models/ and exit
   --version            Print version and exit
 
 CONFIG FILE  (optional -- most users never need this)
@@ -664,8 +699,10 @@ def _parser():
         help=f"Config file path (default: {DEFAULT_CONFIG_FILE})")
     p.add_argument("--deps-dir", default=None, metavar="PATH",
         help=f"Directory for downloaded/installed dependencies (default: {_DEPS_DIR})")
+    p.add_argument("--show-models", action="store_true",
+        help="List all models installed in va_models/ and exit")
     sub = p.add_subparsers(dest="command", metavar="COMMAND")
-    sub.required = True
+    sub.required = False
 
     def _build_args(sp):
         sp.add_argument("--llvm-dir", metavar="PATH",
@@ -687,6 +724,8 @@ def _parser():
     cl = sub.add_parser("clean", help="Run configured make clean target(s)")
     cl.add_argument("--make-cmd", metavar="CMD",
         help="GNU make executable (default: make)")
+    cl.add_argument("--model", metavar="NAME",
+        help="Remove a specific model directory from va_models/ (use --show-models to list)")
 
     b = sub.add_parser("build", help="Install model assets and build")
     b.add_argument("MODEL_ASSETS_PATH", metavar="MODEL_ASSETS_PATH",
@@ -710,6 +749,24 @@ def _parser():
 
     return p
 
+_DOCS_NEXT_STEPS = "https://mpy-va-deploy.readthedocs.io/en/latest/enablement_cm33_mpy_ipc.html#quickstart"
+
+def _print_completion_message(command):
+    prog = os.path.basename(sys.argv[0]) or "deepcraft-voice-assistant-model-deploy.py"
+    if command == "build":
+        print_f("\n   ✓ Build succeeded! Your firmware is ready to flash.")
+        print_f(f"   Next, flash it to your board:  python {prog} flash")
+    elif command == "flash":
+        print_f("\n   ✓ Flashing complete! Your firmware is now running on the device.")
+        print_f(f"   Find next steps in: {_DOCS_NEXT_STEPS}")
+    elif command == "all":
+        print_f("\n   ✓ All done! Firmware built and flashed to your device.")
+        print_f(f"   Find next steps in: {_DOCS_NEXT_STEPS}")
+    elif command == "clean":
+        print_f("\n   ✓ Clean complete! Build artifacts removed.")
+    else:
+        print_f("\n   ✓ Done.")
+
 # ---------------------------------------------------------------------------
 def main():
     parser = _parser()
@@ -720,7 +777,7 @@ def main():
 
     args = parser.parse_args()
 
-    if args.command == "help":
+    if getattr(args, "command", None) == "help":
         print_help(parser)
         return
 
@@ -738,6 +795,22 @@ def main():
 
     firmware_dir = os.path.join(repo_dir, FIRMWARE_REL)
     va_models_dir = os.path.join(repo_dir, VA_MODELS_REL)
+
+    # `--show-models` is a top-level action: list installed models and exit,
+    # regardless of whether a subcommand was given.
+    if getattr(args, "show_models", False):
+        _show_models(va_models_dir)
+        return
+
+    if getattr(args, "command", None) is None:
+        print_help(parser)
+        return
+
+    # Removing a specific model under `clean` does not need the toolchain or the
+    # repo clone, so handle it up front and return before setting anything else up.
+    if args.command == "clean" and getattr(args, "model", None):
+        _clean_model(va_models_dir, args.model)
+        return
 
     if args.command in ("build", "all"):
         _section("Getting the latest sources... (This might take a while)")
@@ -772,8 +845,29 @@ def main():
     if openocd:
         make_vars[var_names["openocd"]] = openocd
 
+    # The repo Makefile's clean target runs `$(RM_RF) $(BUILD_DIR)`, which on
+    # Windows expands to `cmd /c rd /s /q build/Debug`. `rd` treats the forward
+    # slash as a switch ("Invalid switch - Debug") and fails. Pass BUILD_DIR with
+    # OS-native separators so the delete works on every platform.
+    if args.command == "clean":
+        build_dir_rel = os.path.join(BUILD_DIR_BASE, build_config)
+        make_vars["BUILD_DIR"] = build_dir_rel
+        # `rd`/`rm -rf` errors out if the directory is already gone, which would
+        # make a repeated clean fail. Nothing to remove => report and skip make.
+        if not os.path.isdir(os.path.join(firmware_dir, build_dir_rel)):
+            _section("Cleaning up build artifacts")
+            print_f(f"   Nothing to clean  ")
+            _print_completion_message(args.command)
+            return
+
     targets = get_make_targets(cfg, args.command)
-    _section("Final step... Building and flashing to your device!")
+    section_titles = {
+        "build": "Final step... Building your firmware!",
+        "flash": "Final step... Flashing to your device!",
+        "all":   "Final step... Building and flashing to your device!",
+        "clean": "Cleaning up build artifacts",
+    }
+    _section(section_titles.get(args.command, "Running make target(s)"))
     for target in targets:
         run_make_target(
             firmware_dir=firmware_dir,
@@ -783,8 +877,7 @@ def main():
             jobs=jobs if args.command in ("build", "all") else None,
             var_map=make_vars,
         )
-    print_f("\n   ✓ All done! Your build is ready to roll.")
-    print_f("   Find next steps in: https://mpy-va-deploy.readthedocs.io/en/latest/enablement_cm33_mpy_ipc.html#quickstart")
+    _print_completion_message(args.command)
 
 
 if __name__ == "__main__":
