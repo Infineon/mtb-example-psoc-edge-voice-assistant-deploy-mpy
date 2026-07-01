@@ -22,8 +22,7 @@ Download the tool into a local folder with ``curl``:
 
 .. code-block:: console
 
-   curl -O https://raw.githubusercontent.com/Infineon/mtb-example-psoc-edge-voice-assistant-deploy-mpy/main/tools/deepcraft-voice-assistant-model-deploy.py
-   curl -O https://raw.githubusercontent.com/Infineon/mtb-example-psoc-edge-voice-assistant-deploy-mpy/main/tools/deepcraft-voice-assistant-model-deploy.ini
+   curl -s -L -o deepcraft-voice-assistant-model-deploy.py https://raw.githubusercontent.com/Infineon/mtb-example-psoc-edge-voice-assistant-deploy-mpy/main/tools/deepcraft-voice-assistant-model-deploy.py
 
 ----
 
@@ -163,27 +162,11 @@ model. BSP and middleware objects are kept, so incremental rebuilds stay fast.
    * - ``--model MODEL``
      - Also delete that model's assets from the project.
 
-----
+show-models
+~~~~~~~~~~~
 
-Config file
------------
+List all available models in the project.
 
-The script looks for ``deepcraft-voice-assistant-model-deploy.ini`` next to itself first,
-then falls back to ``~/.deepcraft-voice-assistant-model-deploy.ini``.
-Use ``--config-file PATH`` to point to a different location.
+.. code-block:: powershell
 
-.. code-block:: ini
-
-   [tools]
-   llvm_dir  = C:/llvm/LLVM-ET-Arm-19.1.5-Windows-x86_64
-   # openocd  = C:/path/to/openocd.exe   ; skip auto-download
-   # make_cmd = mingw32-make             ; auto-detected if omitted
-
-   [project]
-   build_config = Debug                  ; or Release
-
-   [board]
-   # serial_number = 0D161698012D2400    ; only needed with multiple boards
-
-Command-line options always take precedence over the config file.
-The ``LLVM_DIR`` environment variable is also accepted as a fallback for ``llvm_dir``.
+   python deepcraft-voice-assistant-model-deploy.py --show-models
