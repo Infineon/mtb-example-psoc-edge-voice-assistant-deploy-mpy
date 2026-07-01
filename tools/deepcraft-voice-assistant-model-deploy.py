@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-deepcraft-voice-assistant-model-deploy.py  v0.2.0  --  Generic Makefile-driven
+deepcraft-voice-assistant-model-deploy.py  v0.1.1  --  Generic Makefile-driven
 build/flash/deploy helper for DEEPCRAFT CM55 Voice-Assistant projects.
 
 Subcommands
@@ -8,19 +8,18 @@ Subcommands
     build  MODEL_ASSETS_PATH  Install model assets, then run Make target(s)
     flash                    Run Make target(s) for flashing
     all    MODEL_ASSETS_PATH  Install model assets, then run Make target(s)
-    clean                    Run Make target(s) for cleanup
-  help               Show detailed usage information
+    clean                    Run Make target(s) for cleanup, or remove a model
+                             with 'clean --model NAME'
+    help                     Show detailed usage information
+
+Global options
+--------------
+    --show-models            List all models installed
 
 MODEL_ASSETS_PATH
 ----------
-  Path to the DEEPCRAFT model directory or a .zip file.
-  Timestamped export names (e.g. test_gpio_control_14-04-2026_15042026_135817.zip)
-  are supported -- the timestamp is stripped automatically.
+  Path to the DEEPCRAFT model directory (.zip or extracted folder).
 
-Configuration is stored in deepcraft-voice-assistant-model-deploy.ini next to this script, or ~/.deepcraft-voice-assistant-model-deploy.ini.
-
-This script intentionally delegates build/flash/clean behavior to Make targets
-so it can be reused with other repositories that expose the same targets.
 """
 
 import argparse
@@ -42,7 +41,7 @@ except ImportError:
     _requests = None
 
 # ---------------------------------------------------------------------------
-VERSION  = "0.2.0"
+VERSION  = "0.1.1"
 REPO_URL = "https://github.com/Infineon/mtb-example-psoc-edge-voice-assistant-deploy-mpy.git"
 FIRMWARE_REL   = "cm55_firmware"
 VA_MODELS_REL  = os.path.join(FIRMWARE_REL, "va_models")
@@ -613,7 +612,6 @@ COMMANDS
 
       Required:
         MODEL_ASSETS_PATH        Path to the DEEPCRAFT model folder or .zip file.
-                                 Timestamped export names are handled for you.
 
       Options:
         --llvm-dir  PATH         LLVM toolchain dir (skips the setup prompt)
@@ -662,32 +660,6 @@ GLOBAL OPTIONS
                        Default: <script dir>/va-mpy
   --show-models        List all models installed in va_models/ and exit
   --version            Print version and exit
-
-CONFIG FILE  (optional -- most users never need this)
------------------------------------------------------
-  By default the script discovers/installs tools and uses sensible Make
-  targets, so no config is required. Create deepcraft-voice-assistant-model-deploy.ini
-  next to the script only if you want to pin tool paths or customize targets:
-
-  [tools]
-  llvm_dir      = C:\\llvm\\LLVM-ET-Arm-{_LLVM_VERSION}-Windows-x86_64
-  make_cmd      = mingw32-make
-  openocd       = C:\\path\\to\\openocd.exe
-  deps_dir      = C:\\path\\to\\va-mpy   ; where downloads/installs go
-
-  [make_targets]            ; override only if your repo uses different names
-  build         = all
-  flash         = deploy
-  clean         = clean
-  all           = all,deploy
-
-  [board]
-  serial_number = KitProg3 serial to flash (set this when multiple boards are connected)
-
-ENVIRONMENT VARIABLES
----------------------
-  LLVM_DIR    Path to the LLVM Embedded Toolchain for Arm directory.
-              Used when [tools] llvm_dir is not set and --llvm-dir is not passed.
 """)
 
 
@@ -721,7 +693,7 @@ def _parser():
     h = sub.add_parser("help", help="Show detailed usage information")
     h.set_defaults(command="help")
 
-    cl = sub.add_parser("clean", help="Run configured make clean target(s)")
+    cl = sub.add_parser("clean", help="Remove build artifacts, or a model with --model")
     cl.add_argument("--make-cmd", metavar="CMD",
         help="GNU make executable (default: make)")
     cl.add_argument("--model", metavar="NAME",
