@@ -85,97 +85,100 @@ Open MicroPython supported IDE (e.g. Thonny), and copy the below MicroPython cod
 
 .. code-block:: python
 
-   from machine import IPC, Pin
-   from deepcraft_model import DeepcraftModel
-   import time
+   """
+    deepcraft_voice_assistant.py — Host-side (MicroPython) DEEPCRAFT model runner.
 
-   # ---------------------------------------------------------------------------
-   # Hardware output — update to match your board/model
-   # ---------------------------------------------------------------------------
-   pin_out = Pin("P17_1", Pin.OUT, value=1)
+    Generic application host that can run *any* DEEPCRAFT model deployed on the
+    target core.
 
-   # Intent index → action mapping.
-   # Update these to match the commands defined in your DEEPCRAFT model.
-   INTENT_ACTIONS = {
-       0: lambda: (pin_out.value(0), print("[HOST] P17_1 -> LOW")),
-       1: lambda: (pin_out.value(1), print("[HOST] P17_1 -> HIGH")),
-   }
+    To act on a recognised intent, add your application logic inside on_event() under
+    VA_EVENT_INTENT.
 
-   # ---------------------------------------------------------------------------
-   # Transport setup — IPC
-   # DeepcraftModel constructor calls ipc.init() automatically.
-   # ---------------------------------------------------------------------------
-   ipc = IPC(src_core=IPC.CM33, target_core=IPC.CM55)
+    """
 
-   # ---------------------------------------------------------------------------
-   # DeepcraftModel — wraps the transport and exposes VA events
-   # ---------------------------------------------------------------------------
-   model = DeepcraftModel(ipc)
+    from machine import IPC
+    from deepcraft_model import DeepcraftModel
+    import time
 
+    # ===========================================================================
+    # CONFIG
+    # ===========================================================================
 
-   # ---------------------------------------------------------------------------
-   # Event callback — invoked by the wrapper with (va_model_events_t, value)
-   # ---------------------------------------------------------------------------
-   def on_va_event(event, value):
-       if event == DeepcraftModel.VA_EVENT_READY:
-           print("[HOST] VA ready and listening")
+    # Model type to run on the target core
+    MODEL = DeepcraftModel.MODEL_VA
 
-       elif event == DeepcraftModel.VA_EVENT_WAKEWORD_DETECTED:
-           print("[HOST] Wake-word detected!")
+    _EVENT_NAMES = {
+        DeepcraftModel.VA_EVENT_READY: "READY",
+        DeepcraftModel.VA_EVENT_WAKEWORD_DETECTED: "WAKEWORD_DETECTED",
+        DeepcraftModel.VA_EVENT_INTENT: "INTENT",
+        DeepcraftModel.VA_EVENT_TIMEOUT: "TIMEOUT",
+        DeepcraftModel.VA_EVENT_STOPPED: "STOPPED",
+        DeepcraftModel.VA_EVENT_ERROR: "ERROR",
+    }
 
-       elif event == DeepcraftModel.VA_EVENT_INTENT:
-           intent_idx = value
-           print("[HOST] Intent received: index =", intent_idx)
-           action = INTENT_ACTIONS.get(intent_idx)
-           if action:
-               action()
-           else:
-               print("[HOST] Unknown intent index:", intent_idx)
+    # ---------------------------------------------------------------------------
+    # Transport setup — IPC
+    # ---------------------------------------------------------------------------
+    ipc = IPC(src_core=IPC.CM33, target_core=IPC.CM55)
 
-       elif event == DeepcraftModel.VA_EVENT_TIMEOUT:
-           print("[HOST] Command timeout — say the wake-word again")
+    model = DeepcraftModel(ipc, model=MODEL)
 
-       elif event == DeepcraftModel.VA_EVENT_STOPPED:
-           print("[HOST] VA stopped")
+    # ---------------------------------------------------------------------------
+    # Event callback — invoked by the wrapper with (event, value)
+    # ---------------------------------------------------------------------------
+    def on_event(event, value):
+        if event == DeepcraftModel.VA_EVENT_READY:
+            print("[HOST] Model ready and listening")
 
-       elif event == DeepcraftModel.VA_EVENT_ERROR:
-           print("[HOST] Fatal VA error")
+        elif event == DeepcraftModel.VA_EVENT_WAKEWORD_DETECTED:
+            print("[HOST] Wake-word detected!")
 
-       else:
-           print("[HOST] Unknown event:", event, "value:", value)
+        elif event == DeepcraftModel.VA_EVENT_INTENT:
+            # The model reports only a numeric intent index. Add your own
+            # application logic here to act on a specific index if desired.
+            print("[HOST] Intent received: index =", value)
 
+        elif event == DeepcraftModel.VA_EVENT_TIMEOUT:
+            print("[HOST] Command timeout — say the wake-word again")
 
-   model.set_event_cb(on_va_event)
+        elif event == DeepcraftModel.VA_EVENT_STOPPED:
+            print("[HOST] Model stopped")
 
-   # ---------------------------------------------------------------------------
-   # Boot the target and start the VA
-   # ---------------------------------------------------------------------------
-   model.enable_target()  # powers on / boots the target processor
-   time.sleep_ms(500)     # allow target boot time
+        elif event == DeepcraftModel.VA_EVENT_ERROR:
+            print("[HOST] Fatal model error")
 
-   model.start()          # sends DEEPCRAFT_CMD_START to the target
-   print('\n[HOST] Say the wake-word "OK test" followed by a command:')
-   print("       0) Make P17_1 LOW")
-   print("       1) Make P17_1 HIGH\n")
+        else:
+            print("[HOST] Unknown event:", _EVENT_NAMES.get(event, event), "value:", value)
 
-   # ---------------------------------------------------------------------------
-   # Main event loop
-   # ---------------------------------------------------------------------------
-   while True:
-       if model.state() == DeepcraftModel.STATE_IDLE:
-           break
-       time.sleep_ms(10)
+    model.set_event_cb(on_event)
 
-   # Cleanup
-   pin_out.value(1)
-   time.sleep_ms(20)
-   print("\nVA Assistant model execution stopped")
+    # ---------------------------------------------------------------------------
+    # Boot the target and start the model
+    # ---------------------------------------------------------------------------
+    model.enable_target()  # powers on / boots the target processor
+    time.sleep_ms(500)  # allow target boot time
+
+    model.start()  # sends DEEPCRAFT_CMD_START to the target
+    print("\n[HOST] Say the model's wake-word followed by a command.\n")
+
+    print("Specifically for the model in repository , use the following: \n - Wake-word : Ok test \n - Commands : \n 1) Make P17_1 High \n 2) Make P17_1 Low \n")
+
+    # ---------------------------------------------------------------------------
+    # Main event loop
+    # ---------------------------------------------------------------------------
+    while True:
+
+        if model.state() == DeepcraftModel.STATE_IDLE:
+            break
+
+        time.sleep_ms(10)
+
+    print("\nDEEPCRAFT model execution stopped")
 
 .. note::
    This example is specific to the ``test_gpio_control`` model. When using your own
-   model, update ``INTENT_ACTIONS`` and the printed wake-word and command labels to
+   model, update ``INTENT_ACTIONS`` and ``WAKE WORD`` to
    match what your DEEPCRAFT™ project defines.
-
 
 ----
 
