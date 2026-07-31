@@ -23,6 +23,8 @@ APPNAME          ?= cm55_firmware
 CONFIG           ?= Debug
 BOARD            ?= KIT_PSE84_AI
 DEEPCRAFT_PROJECT ?= test_gpio_control
+MODEL_TYPE       ?= va
+TFLM_MODEL       ?= sine
 
 # Directory containing this Makefile (cm55_firmware/)
 BOARD_DIR        := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
@@ -43,6 +45,8 @@ ifeq ($(OS),Windows_NT)
         ifneq (,$(findstring :,$(LLVM_DIR)))
             override undefine LLVM_DIR
         endif
+    else
+        SHELL := cmd
     endif
 else
     SHELL := /bin/sh
@@ -237,8 +241,9 @@ INCLUDES := \
     -I$(APP_DIR)/includes \
     -I$(APP_DIR)/sources \
     -I$(APP_DIR)/sources/bsp-cfg \
-    -I$(APP_DIR)/deepcraft_wrapper \
-    -I$(APP_DIR)/va_models/$(DEEPCRAFT_PROJECT) \
+    -I$(APP_DIR)/adapters/deepcraft-adapter \
+    -I$(APP_DIR)/model_framework/deepcraft/va_models/$(DEEPCRAFT_PROJECT) \
+    -I$(APP_DIR)/model_framework/tflm/$(TFLM_MODEL) \
     -I$(SHARED_DIR)/include \
     -I$(DEEPCRAFT_DIR) \
     \
@@ -315,20 +320,24 @@ INCLUDES := \
     -I$(LIB_VA)/include \
     -I$(LIB_VA)/source/va_core
 
+# For the plain TFLM engine, keep adapter/model includes local while using
+# the same ml-tflite-micro include set as the pre-built linked library.
+ifeq ($(MODEL_TYPE),tflm)
+DEFINES += -DTF_LITE_STRIP_ERROR_STRINGS
+
+INCLUDES := \
+    -I$(APP_DIR)/adapters/tflm-adapter \
+    -I$(APP_DIR)/model_framework/tflm/$(TFLM_MODEL) \
+    $(INCLUDES)
+endif
+
 ################################################################################
 # Application source files
 ################################################################################
 
+# Sources common to all engines (board bring-up + retarget-io)
 APP_C_SRCS := \
-    $(APP_DIR)/main.c \
-    $(APP_DIR)/sources/audio_enhancement.c \
-    $(APP_DIR)/deepcraft_wrapper/deepcraft_wrapper.c \
-    $(APP_DIR)/sources/ipc.c \
-    $(APP_DIR)/sources/pdm_mic.c \
-    $(APP_DIR)/sources/profiler.c \
     $(APP_DIR)/sources/retarget_io_init.c \
-    $(APP_DIR)/sources/voice_assistant.c \
-    $(APP_DIR)/sources/bsp-cfg/cy_afe_configurator_settings.c \
     $(APP_DIR)/sources/bsp-cfg/cycfg.c \
     $(APP_DIR)/sources/bsp-cfg/cycfg_clocks.c \
     $(APP_DIR)/sources/bsp-cfg/cycfg_dmas.c \
@@ -338,16 +347,41 @@ APP_C_SRCS := \
     $(APP_DIR)/sources/bsp-cfg/cycfg_protection.c \
     $(APP_DIR)/sources/bsp-cfg/cycfg_qspi_memslot.c \
     $(APP_DIR)/sources/bsp-cfg/cycfg_routing.c \
-    $(APP_DIR)/sources/bsp-cfg/cycfg_system.c \
-    $(SHARED_DIR)/source/COMPONENT_CM55/cm55_ipc_communication.c \
-    $(DEEPCRAFT_DIR)/deepcraft_engine.c
+    $(APP_DIR)/sources/bsp-cfg/cycfg_system.c
 
-# VA model sources (project-specific)
+# Per-engine C++ application sources (populated in the engine blocks below)
+APP_CXX_SRCS :=
+
+ifeq ($(MODEL_TYPE),va)
+# DeepCraft voice-assistant application + project model sources
 APP_C_SRCS += \
-    $(APP_DIR)/va_models/$(DEEPCRAFT_PROJECT)/$(DEEPCRAFT_PROJECT)_config.c \
-    $(APP_DIR)/va_models/$(DEEPCRAFT_PROJECT)/$(DEEPCRAFT_PROJECT)_ifx_va_config_prms.c \
-    $(APP_DIR)/va_models/$(DEEPCRAFT_PROJECT)/$(DEEPCRAFT_PROJECT)_U55_CMDmodel.c \
-    $(APP_DIR)/va_models/$(DEEPCRAFT_PROJECT)/$(DEEPCRAFT_PROJECT)_U55_WWmodel.c
+    $(APP_DIR)/main.c \
+    $(APP_DIR)/sources/audio_enhancement.c \
+    $(APP_DIR)/adapters/deepcraft-adapter/deepcraft_wrapper.c \
+    $(APP_DIR)/sources/ipc.c \
+    $(APP_DIR)/sources/pdm_mic.c \
+    $(APP_DIR)/sources/profiler.c \
+    $(APP_DIR)/sources/voice_assistant.c \
+    $(APP_DIR)/sources/bsp-cfg/cy_afe_configurator_settings.c \
+    $(SHARED_DIR)/source/COMPONENT_CM55/cm55_ipc_communication.c \
+    $(DEEPCRAFT_DIR)/deepcraft_engine.c \
+    $(APP_DIR)/model_framework/deepcraft/va_models/$(DEEPCRAFT_PROJECT)/$(DEEPCRAFT_PROJECT)_config.c \
+    $(APP_DIR)/model_framework/deepcraft/va_models/$(DEEPCRAFT_PROJECT)/$(DEEPCRAFT_PROJECT)_ifx_va_config_prms.c \
+    $(APP_DIR)/model_framework/deepcraft/va_models/$(DEEPCRAFT_PROJECT)/$(DEEPCRAFT_PROJECT)_U55_CMDmodel.c \
+    $(APP_DIR)/model_framework/deepcraft/va_models/$(DEEPCRAFT_PROJECT)/$(DEEPCRAFT_PROJECT)_U55_WWmodel.c
+endif
+
+ifeq ($(MODEL_TYPE),tflm)
+# Plain TFLM engine: pre-built libtensorflow-microlite.a provides the runtime.
+# Only the adapter wrapper and per-model flatbuffer bytes are compiled from source.
+
+APP_C_SRCS += \
+    $(APP_DIR)/sources/main_tflm.c
+
+APP_CXX_SRCS += \
+    $(APP_DIR)/adapters/tflm-adapter/tflm_wrapper.cpp \
+    $(APP_DIR)/model_framework/tflm/$(TFLM_MODEL)/model_data.cpp
+endif
 
 ################################################################################
 # BSP source files
@@ -657,7 +691,7 @@ LD_EXTRA_LIBS := -lc++ -lc++abi
 ################################################################################
 
 ALL_C_SRCS   := $(APP_C_SRCS) $(BSP_C_SRCS) $(LIB_C_SRCS)
-ALL_CXX_SRCS := $(LIB_CXX_SRCS)
+ALL_CXX_SRCS := $(APP_CXX_SRCS) $(LIB_CXX_SRCS)
 ALL_S_SRCS   := $(LIB_S_SRCS)
 
 # Derive object paths: map each source file to BUILD_DIR/obj/<mangled-path>.o
