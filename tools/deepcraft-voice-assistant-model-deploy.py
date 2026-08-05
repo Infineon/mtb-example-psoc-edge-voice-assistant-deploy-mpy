@@ -78,6 +78,12 @@ def _llvm_search_paths():
         os.path.join(os.path.expanduser("~"), "llvm", _LLVM_BASE_NAME),
         os.path.join(_SCRIPT_DIR, _LLVM_BASE_NAME),
     ]
+def _local_llvm_path():
+    """Return a previously installed local LLVM toolchain path, if present."""
+    for candidate in _llvm_search_paths():
+        if os.path.isdir(candidate) and os.path.isdir(os.path.join(candidate, "bin")):
+            return candidate
+    return None
 def print_f(*a, **kw): print(*a, **kw, flush=True)
 
 def _set_deps_dir(path):
@@ -231,6 +237,31 @@ def _install_mingw():
     print_f(f"[dc-va] MinGW installed -> {target_dir}")
     return target_dir
 
+def _local_mingw_make_path():
+    """Return path to a previously installed local mingw32-make, if present."""
+    if not _WIN:
+        return None
+    base = _DEPS_DIR
+    if not os.path.isdir(base):
+        return None
+
+    # Prefer newest install directory first.
+    candidates = []
+    for name in os.listdir(base):
+        path = os.path.join(base, name)
+        if os.path.isdir(path) and name.startswith("mingw64"):
+            candidates.append(path)
+    candidates.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+
+    for root in candidates:
+        direct = os.path.join(root, "bin", "mingw32-make.exe")
+        nested = os.path.join(root, "mingw64", "bin", "mingw32-make.exe")
+        if os.path.isfile(direct):
+            return direct
+        if os.path.isfile(nested):
+            return nested
+    return None
+
 # ---------------------------------------------------------------------------
 def load_config(path):
     cfg = configparser.ConfigParser()
@@ -252,11 +283,16 @@ def ensure_llvm(cfg, config_path, cli_override=None):
     if value and os.path.isdir(value):
         return value
 
+    local_llvm = _local_llvm_path()
+    if local_llvm:
+        print_f(f"   ✓ Reusing local LLVM: {local_llvm}")
+        return local_llvm
+
     # Always ask the user first
     if _prompt_yes_no(f"   Have you already manually installed LLVM Embedded Toolchain for Arm {_LLVM_VERSION}?"):
         # Try well-known locations silently first, then ask for path
         for candidate in _llvm_search_paths():
-            if os.path.isdir(candidate):
+            if os.path.isdir(candidate) and os.path.isdir(os.path.join(candidate, "bin")):
                 print_f(f"   ✓ Great! Found LLVM at: {candidate}")
                 return candidate
         # Not found in known locations — ask user to provide path
@@ -367,6 +403,14 @@ def get_make_cmd(cfg, cli_override=None):
     if found_default:
         print_f(f"   ✓ Great! Found {DEFAULT_MAKE_CMD} in PATH")
         return found_default
+
+    # Reuse a prior auto-install in the deps directory if available.
+    local_mingw_make = _local_mingw_make_path()
+    if local_mingw_make:
+        local_bin = os.path.dirname(local_mingw_make)
+        os.environ["PATH"] = local_bin + os.pathsep + os.environ["PATH"]
+        print_f(f"   ✓ Reusing local {DEFAULT_MAKE_CMD}: {local_mingw_make}")
+        return local_mingw_make
 
     # Always ask the user first
     if _prompt_yes_no(f"   Have you already manually installed {DEFAULT_MAKE_CMD}?"):
@@ -594,6 +638,24 @@ def _run(cmd, cwd=None, env=None):
     if r.returncode != 0:
         _fatal(f"Command failed (exit {r.returncode})")
 
+def _project_marker_path(firmware_dir, build_config):
+    return os.path.join(firmware_dir, BUILD_DIR_BASE, build_config, ".dc_va_last_project")
+
+def _read_last_project(firmware_dir, build_config):
+    marker = _project_marker_path(firmware_dir, build_config)
+    try:
+        with open(marker, "r", encoding="utf-8") as fh:
+            value = fh.read().strip()
+            return value or None
+    except OSError:
+        return None
+
+def _write_last_project(firmware_dir, build_config, project_name):
+    marker = _project_marker_path(firmware_dir, build_config)
+    os.makedirs(os.path.dirname(marker), exist_ok=True)
+    with open(marker, "w", encoding="utf-8") as fh:
+        fh.write(project_name + "\n")
+
 def print_help(parser=None):
     print_f(f"""
 deepcraft-voice-assistant-model-deploy.py  v{VERSION}
@@ -817,6 +879,36 @@ def main():
     if openocd:
         make_vars[var_names["openocd"]] = openocd
 
+    # Switching model/project names while reusing the same build directory can
+    # leave stale object files compiled with old PROJECT_PREFIX values.
+    # Clean once before build/all when we detect a project switch.
+    if args.command in ("build", "all") and project_name:
+        build_dir_rel = os.path.join(BUILD_DIR_BASE, build_config)
+        build_dir_abs = os.path.join(firmware_dir, build_dir_rel)
+        prev_project = _read_last_project(firmware_dir, build_config)
+        need_clean = os.path.isdir(build_dir_abs) and prev_project != project_name
+        if need_clean:
+            if prev_project:
+                _section(f"Model changed from '{prev_project}' to '{project_name}'")
+            else:
+                _section("Preparing clean build for selected model")
+            print_f(f"   Previous model: {prev_project or '<unknown>'}")
+            print_f(f"   Current model : {project_name}")
+            print_f("   Cleaning stale objects before build...")
+            clean_vars = {
+                var_names["config"]: build_config,
+                "BUILD_DIR": build_dir_rel,
+            }
+            for clean_target in get_make_targets(cfg, "clean"):
+                run_make_target(
+                    firmware_dir=firmware_dir,
+                    make_cmd=make_cmd,
+                    target=clean_target,
+                    llvm_dir=llvm_dir,
+                    jobs=None,
+                    var_map=clean_vars,
+                )
+
     # The repo Makefile's clean target runs `$(RM_RF) $(BUILD_DIR)`, which on
     # Windows expands to `cmd /c rd /s /q build/Debug`. `rd` treats the forward
     # slash as a switch ("Invalid switch - Debug") and fails. Pass BUILD_DIR with
@@ -849,6 +941,8 @@ def main():
             jobs=jobs if args.command in ("build", "all") else None,
             var_map=make_vars,
         )
+    if args.command in ("build", "all") and project_name:
+        _write_last_project(firmware_dir, build_config, project_name)
     _print_completion_message(args.command)
 
 
