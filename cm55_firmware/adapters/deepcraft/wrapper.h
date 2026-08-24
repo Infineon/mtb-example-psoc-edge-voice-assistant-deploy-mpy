@@ -1,5 +1,5 @@
 /**
- * @file deepcraft_wrapper.h
+ * @file wrapper.h
  * @brief Target-side DeepCraft model interface — public application API.
  *
  * This is the **only** DeepCraft header that application code (@c main.c)
@@ -8,22 +8,23 @@
  *
  * @par File layout (target project)
  * @code
- *  deepcraft_wrapper.h / .c  — Public API + bridge  (you are here)
+ *  adapters/deepcraft/wrapper.h / .c  — Public API + bridge
  *  ipc.h / ipc.c             — IPC transport vtable implementation
  *  main.c                    — Application: VA task, audio pipeline
  * @endcode
  *
- * To swap transports, only @c deepcraft_wrapper.c changes — @c main.c is
+ * To swap transports, only @c wrapper.c changes — @c main.c is
  * entirely unaffected.
  *
  * @copyright Copyright (c) 2026 Infineon Technologies AG
  * @license SPDX-License-Identifier: MIT
  */
 
-#ifndef DEEPCRAFT_WRAPPER_H
-#define DEEPCRAFT_WRAPPER_H
+#ifndef DEEPCRAFT_ADAPTER_WRAPPER_H
+#define DEEPCRAFT_ADAPTER_WRAPPER_H
 
 #include <stdint.h>
+#include "deepcraft_interface.h"
 
 /**
  * @defgroup deepcraft_wrapper DeepCraft Wrapper API
@@ -56,7 +57,8 @@ typedef void (*deepcraft_on_stop_t)(void);
  * @param on_start  Called when the host sends CMD_START. Must not be NULL.
  * @param on_stop   Called when the host sends CMD_STOP.  Must not be NULL.
  */
-void deepcraft_wrapper_init(deepcraft_on_start_t on_start,
+void deepcraft_wrapper_init(deepcraft_interface_t *interface,
+    deepcraft_on_start_t on_start,
     deepcraft_on_stop_t on_stop);
 
 /**
@@ -112,4 +114,4 @@ void deepcraft_wrapper_notify_error(void);
 
 /** @} */ /* end of deepcraft_wrapper group */
 
-#endif /* DEEPCRAFT_WRAPPER_H */
+#endif /* DEEPCRAFT_ADAPTER_WRAPPER_H */

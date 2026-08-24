@@ -25,18 +25,17 @@ The deploy tool and the firmware repository sit side-by-side:
    │
    └── mtb-example-psoc-edge-voice-assistant-deploy-mpy/
        ├── proj_cm55/          # CM55 firmware source (C)
-       │   ├── main.c
-       │   ├── voice_assistant.c/.h
-       │   ├── pdm_mic.c/.h
-       │   ├── audio_enhancement.c/.h
-       │   ├── deepcraft_wrapper.c/.h
-       │   ├── ipc.c/.h
-       │   ├── profiler.c/.h
-       │   ├── afe/            # Audio Front-End configurator project
-       │   ├── bsp-cfg/        # Generated BSP configuration
-       │   └── va_models/      # Model assets (one sub-folder per DEEPCRAFT project)
+      │   ├── main.c
+      │   ├── adapters/deepcraft/wrapper.c/.h
+      │   ├── framework/deepcraft/va_models/  # Model assets (one sub-folder per project)
+      │   └── sources/
+      │       ├── audio/       # Voice Assistant, PDM mic and audio enhancement
+      │       ├── platform/    # Profiling and retarget I/O
+      │       ├── transport/   # IPC transport adapter
+      │       ├── afe/         # Audio Front-End configurator project
+      │       └── bsp-cfg/     # Generated BSP configuration
        │
-       ├── micropython-deepcraft-model-interface/  # Example CM33 application (MicroPython)
+      ├── deps/deepcraft/micropython-deepcraft-model-interface/  # CM33 MicroPython interface
        │   └── deepcraft/
        │       ├── deepcraft_engine.c
        │       └── deepcraft_interface.c/.h

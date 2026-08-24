@@ -1,5 +1,5 @@
 [submodule "micropython-deepcraft-model-interface"]
-	path = deps/micropython-deepcraft-model-interface
+	path = deps/deepcraft/micropython-deepcraft-model-interface
 	url = https://github.com/Infineon/micropython-deepcraft-model-interface
 [submodule "psoc-edge/abstraction-rtos"]
 	path = deps/psoc-edge/abstraction-rtos

@@ -2,11 +2,11 @@
  * main.c — Target-side Voice Assistant application.
  *
  * Application code only.  No transport, IPC, or protocol constants appear here.
- * All DeepCraft model interface calls go through deepcraft_wrapper.h:
+ * All DeepCraft model interface calls go through wrapper.h:
  *   deepcraft_wrapper_init()       — boot-time setup
  *   deepcraft_wrapper_notify_*()   — report VA events to the host
  *
- * Transport is selected in deepcraft_wrapper.c.
+ * Transport is selected in adapters/deepcraft/wrapper.c.
  *
  * Copyright (c) 2026 Infineon Technologies AG
  * SPDX-License-Identifier: MIT
@@ -19,6 +19,7 @@
 #include "retarget_io_init.h"
 #include "voice_assistant.h"
 #include "profiler.h"
+#include "ipc.h"
 
 #ifdef USE_AUDIO_ENHANCEMENT
 #include "audio_enhancement.h"
@@ -28,7 +29,7 @@
 #include MTB_WWD_NLU_CONFIG_HEADER(PROJECT_PREFIX)
 
 /* DeepCraft model interface — the only DeepCraft header main.c needs */
-#include "deepcraft_wrapper.h"
+#include "wrapper.h"
 
 /*******************************************************************************
  * Macros
@@ -44,6 +45,7 @@
  ******************************************************************************/
 static volatile bool g_va_enabled  = false;
 static TaskHandle_t  g_va_task_hdl = NULL;
+static ipc_interface_t g_ipc_interface;
 
 /* Required by audio-voice-core */
 uint8_t  bf_coeffs[1];
@@ -185,7 +187,8 @@ int main(void)
     __enable_irq();
 
     /* Initialise the DeepCraft model interface (transport configured inside) */
-    deepcraft_wrapper_init(on_va_start, on_va_stop);
+    ipc_interface_init(&g_ipc_interface);
+    deepcraft_wrapper_init(&g_ipc_interface.base, on_va_start, on_va_stop);
 
 #ifdef USE_AUDIO_ENHANCEMENT
     ae_rslt_t ae_result = audio_enhancement_init(1U);

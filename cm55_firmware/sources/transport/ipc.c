@@ -32,24 +32,6 @@ CY_SECTION_SHAREDMEM static ipc_msg_t s_tx_msg;
 static ipc_interface_t *s_iface = NULL;
 
 /* Application-level start / stop callbacks, set during init                 */
-static deepcraft_on_start_t s_on_start = NULL;
-static deepcraft_on_stop_t  s_on_stop  = NULL;
-
-/* ── Internal receive dispatcher ─────────────────────────────────────────── */
-/*
- * Called (via on_receive) when a command arrives from the host.
- * Routes DEEPCRAFT_CMD_START / DEEPCRAFT_CMD_STOP to the application callbacks.
- */
-static void on_cmd_from_host(uint8_t cmd, uint32_t value)
-{
-    (void)value;
-    if (cmd == DEEPCRAFT_CMD_START && s_on_start != NULL) {
-        s_on_start();
-    } else if (cmd == DEEPCRAFT_CMD_STOP && s_on_stop != NULL) {
-        s_on_stop();
-    }
-}
-
 /* IPC pipe ISR trampoline — called by the PDL pipe driver */
 static void ipc_rx_callback(uint32_t *msg_data)
 {
@@ -103,55 +85,19 @@ static void ipc_register_receive_cb(deepcraft_interface_t *self,
 /* ═══════════════════════════════════════════════════════════════════════════
  * Public init
  * ═══════════════════════════════════════════════════════════════════════════ */
-void ipc_interface_init(ipc_interface_t *self,
-    deepcraft_on_start_t on_start,
-    deepcraft_on_stop_t  on_stop)
+void ipc_interface_init(ipc_interface_t *self)
 {
     self->base.send               = ipc_send;
     self->base.register_receive_cb = ipc_register_receive_cb;
     self->on_receive               = NULL;
 
-    s_iface    = self;
-    s_on_start = on_start;
-    s_on_stop  = on_stop;
+    s_iface = self;
 
     /* Platform-specific IPC pipe setup (defined in shared/source) */
     cm55_ipc_communication_setup();
 
-    /* Wire the internal command dispatcher as the receive callback */
-    self->base.register_receive_cb(&self->base, on_cmd_from_host);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
  * Notify helpers — send VA model events to the host
  * ═══════════════════════════════════════════════════════════════════════════ */
-void ipc_notify_ready(ipc_interface_t *self)
-{
-    self->base.send(&self->base, DEEPCRAFT_CMD_VA_READY, 0U);
-}
-
-void ipc_notify_wakeword_detected(ipc_interface_t *self)
-{
-    self->base.send(&self->base, DEEPCRAFT_CMD_VA_WAKEWORD_DETECTED, 0U);
-}
-
-void ipc_notify_timeout(ipc_interface_t *self)
-{
-    self->base.send(&self->base, DEEPCRAFT_CMD_VA_TIMEOUT, 0U);
-}
-
-void ipc_notify_stopped(ipc_interface_t *self)
-{
-    self->base.send(&self->base, DEEPCRAFT_CMD_VA_STOPPED, 0U);
-}
-
-void ipc_notify_intent(ipc_interface_t *self, uint8_t intent_index)
-{
-    /* Intent index is sent as the cmd byte; host interprets the value */
-    self->base.send(&self->base, intent_index, 0U);
-}
-
-void ipc_notify_error(ipc_interface_t *self)
-{
-    self->base.send(&self->base, DEEPCRAFT_CMD_VA_ERROR, 0U);
-}

@@ -44,7 +44,7 @@ except ImportError:
 VERSION  = "0.1.1"
 REPO_URL = "https://github.com/Infineon/mtb-example-psoc-edge-voice-assistant-deploy-mpy.git"
 FIRMWARE_REL   = "cm55_firmware"
-VA_MODELS_REL  = os.path.join(FIRMWARE_REL, "va_models")
+VA_MODELS_REL  = os.path.join(FIRMWARE_REL, "framework", "deepcraft", "va_models")
 MAKEFILE       = "Makefile"
 APPNAME        = "cm55_firmware"
 BUILD_DIR_BASE = "build"
@@ -584,7 +584,7 @@ def install_model(model_path, va_models_dir, force=False):
     return project_name
 
 def _list_models(va_models_dir):
-    """Return the sorted names of models (subdirectories) installed in va_models/."""
+    """Return sorted model directories under framework/deepcraft/va_models/."""
     if not os.path.isdir(va_models_dir):
         return []
     return sorted(
@@ -593,7 +593,7 @@ def _list_models(va_models_dir):
     )
 
 def _show_models(va_models_dir):
-    _section("Models installed in va_models/")
+    _section("Models installed in framework/deepcraft/va_models/")
     models = _list_models(va_models_dir)
     if not models:
         print_f(f"   No models found in: {va_models_dir}")
@@ -608,7 +608,7 @@ def _clean_model(va_models_dir, model_name):
     if model_name not in models:
         if models:
             _fatal(
-                f"Model '{model_name}' not found in va_models/.\n"
+                f"Model '{model_name}' not found in framework/deepcraft/va_models/.\n"
                 f"  Available models: {', '.join(models)}"
             )
         _fatal(f"No models are installed in: {va_models_dir}")
@@ -704,11 +704,11 @@ COMMANDS
         --serial    SN           KitProg3 adapter serial (needed with multiple boards)
 
   clean  [options]
-      Remove build artifacts, or remove an installed model from va_models/.
+    Remove build artifacts, or remove an installed model from framework/deepcraft/va_models/.
 
       Options:
         --make-cmd  CMD          GNU make executable (default: mingw32-make)
-        --model     NAME         Remove the named model directory from va_models/
+        --model     NAME         Remove the named model directory from framework/deepcraft/va_models/
                                  (run '--show-models' to see the names)
 
   help
@@ -716,11 +716,10 @@ COMMANDS
 
 GLOBAL OPTIONS
 --------------
-  --config-file PATH   Optional config file (default: deepcraft-voice-assistant-model-deploy.ini next to script)
-  --deps-dir    PATH   Folder for everything this script downloads/installs
-                       (repo clone, LLVM, MinGW, OpenOCD, archives).
-                       Default: <script dir>/va-mpy
-  --show-models        List all models installed in va_models/ and exit
+    --config-file PATH   Optional config file (default: deepcraft-voice-assistant-model-deploy.ini next to script)
+    --deps-dir    PATH   Folder for downloaded tools and archives. Default: <script dir>/va-mpy
+    --repo-dir    PATH   Existing firmware repository to build; skips clone/update.
+    --show-models        List all models installed in framework/deepcraft/va_models/ and exit
   --version            Print version and exit
 """)
 
@@ -733,8 +732,10 @@ def _parser():
         help=f"Config file path (default: {DEFAULT_CONFIG_FILE})")
     p.add_argument("--deps-dir", default=None, metavar="PATH",
         help=f"Directory for downloaded/installed dependencies (default: {_DEPS_DIR})")
+    p.add_argument("--repo-dir", default=None, metavar="PATH",
+        help="Existing firmware repository to build; skips clone/update")
     p.add_argument("--show-models", action="store_true",
-        help="List all models installed in va_models/ and exit")
+        help="List all models installed in framework/deepcraft/va_models/ and exit")
     sub = p.add_subparsers(dest="command", metavar="COMMAND")
     sub.required = False
 
@@ -759,13 +760,13 @@ def _parser():
     cl.add_argument("--make-cmd", metavar="CMD",
         help="GNU make executable (default: make)")
     cl.add_argument("--model", metavar="NAME",
-        help="Remove a specific model directory from va_models/ (use --show-models to list)")
+        help="Remove a specific model directory from framework/deepcraft/va_models/ (use --show-models to list)")
 
     b = sub.add_parser("build", help="Install model assets and build")
     b.add_argument("MODEL_ASSETS_PATH", metavar="MODEL_ASSETS_PATH",
         help="Path to model directory or .zip file")
     b.add_argument("--force", action="store_true",
-        help="Overwrite model assets if they already exist in va_models/")
+        help="Overwrite model assets if they already exist in framework/deepcraft/va_models/")
     _build_args(b)
 
     f = sub.add_parser("flash", help="Run configured make flash target(s)")
@@ -777,7 +778,7 @@ def _parser():
     a.add_argument("MODEL_ASSETS_PATH", metavar="MODEL_ASSETS_PATH",
         help="Path to model directory or .zip file")
     a.add_argument("--force", action="store_true",
-        help="Overwrite model assets if they already exist in va_models/")
+        help="Overwrite model assets if they already exist in framework/deepcraft/va_models/")
     _build_args(a)
     _flash_args(a)
 
@@ -821,7 +822,8 @@ def main():
     _set_deps_dir(deps_dir)
     print_f(f"[dc-va] Dependencies directory: {_DEPS_DIR}")
 
-    repo_dir = os.path.join(_DEPS_DIR, _REPO_FOLDER_NAME)
+    repo_dir = getattr(args, "repo_dir", None) or cfg_get(cfg, "project", "repo_dir")
+    repo_dir = os.path.abspath(os.path.expanduser(repo_dir)) if repo_dir else os.path.join(_DEPS_DIR, _REPO_FOLDER_NAME)
     build_config = cfg_get(cfg, "project", "build_config") or "Debug"
     serial    = getattr(args, "serial",    None) or cfg_get(cfg, "board", "serial_number")
     jobs      = getattr(args, "jobs", None) or multiprocessing.cpu_count()
@@ -847,10 +849,15 @@ def main():
         return
 
     if args.command in ("build", "all"):
-        _section("Getting the latest sources... (This might take a while)")
-        clone_or_update(REPO_URL, repo_dir)
-        ensure_local_config_from_repo(repo_dir)
-        print_f("   ✓ Sources are ready!")
+        if getattr(args, "repo_dir", None) or cfg_get(cfg, "project", "repo_dir"):
+            if not os.path.isfile(os.path.join(firmware_dir, MAKEFILE)):
+                _fatal(f"Existing repository does not contain {FIRMWARE_REL}/{MAKEFILE}: {repo_dir}")
+            print_f(f"[dc-va] Using existing repository: {repo_dir}")
+        else:
+            _section("Getting the latest sources... (This might take a while)")
+            clone_or_update(REPO_URL, repo_dir)
+            ensure_local_config_from_repo(repo_dir)
+            print_f("   ✓ Sources are ready!")
 
     _section("Let's set up required tools")
     make_cmd = get_make_cmd(cfg, getattr(args, "make_cmd", None))
