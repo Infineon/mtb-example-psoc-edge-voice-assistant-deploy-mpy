@@ -60,7 +60,7 @@ The model argument can be:
    * - ``-j N`` / ``--jobs N``
      - Parallel make jobs. Defaults to your CPU core count.
    * - ``--force``
-     - Overwrite model assets that already exist in ``va_models/``.
+    - Overwrite model assets that already exist in ``framework/deepcraft/va_models/``.
 
 Output hex: ``proj_cm55/build/<build_config>/proj_cm55.hex``
 
@@ -126,7 +126,7 @@ model. BSP and middleware objects are kept, so incremental rebuilds stay fast.
    * - ``--all``
      - Remove the entire build directory, including all cached objects.
    * - ``--model MODEL``
-     - Also delete that model's assets from ``va_models/``.
+    - Also delete that model's assets from ``framework/deepcraft/va_models/``.
 
 ----
 

@@ -96,7 +96,7 @@ The model argument can be:
    * - ``-j N`` / ``--jobs N``
      - Parallel make jobs. Defaults to your CPU core count.
    * - ``--force``
-     - Overwrite model assets that already exist in ``va_models/``.
+    - Overwrite model assets that already exist in ``framework/deepcraft/va_models/``.
 
 flash
 ~~~~~

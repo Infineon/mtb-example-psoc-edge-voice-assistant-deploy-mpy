@@ -89,7 +89,11 @@ APP_DIR := $(abspath .)
 SHARED_DIR := $(abspath ../shared)
 
 # MicroPython DeepCraft model interface
-DEEPCRAFT_DIR := $(abspath ../deps/micropython-deepcraft-model-interface/deepcraft)
+DEEPCRAFT_DIR := $(abspath ../deps/deepcraft/micropython-deepcraft-model-interface/deepcraft)
+
+# DeepCraft framework assets selected for this firmware build
+DEEPCRAFT_FRAMEWORK_DIR := $(APP_DIR)/framework/deepcraft
+DEEPCRAFT_VA_MODELS_DIR := $(DEEPCRAFT_FRAMEWORK_DIR)/va_models
 
 # BSP (board-specific files from psoc-edge)
 BSP_DIR := $(PSE_DIR)/TARGET_KIT_PSE84_AI
@@ -237,8 +241,8 @@ INCLUDES := \
     -I$(APP_DIR)/includes \
     -I$(APP_DIR)/sources \
     -I$(APP_DIR)/sources/bsp-cfg \
-    -I$(APP_DIR)/deepcraft_wrapper \
-    -I$(APP_DIR)/va_models/$(DEEPCRAFT_PROJECT) \
+        -I$(APP_DIR)/adapters/deepcraft \
+        -I$(DEEPCRAFT_VA_MODELS_DIR)/$(DEEPCRAFT_PROJECT) \
     -I$(SHARED_DIR)/include \
     -I$(DEEPCRAFT_DIR) \
     \
@@ -321,13 +325,13 @@ INCLUDES := \
 
 APP_C_SRCS := \
     $(APP_DIR)/main.c \
-    $(APP_DIR)/sources/audio_enhancement.c \
-    $(APP_DIR)/deepcraft_wrapper/deepcraft_wrapper.c \
-    $(APP_DIR)/sources/ipc.c \
-    $(APP_DIR)/sources/pdm_mic.c \
-    $(APP_DIR)/sources/profiler.c \
-    $(APP_DIR)/sources/retarget_io_init.c \
-    $(APP_DIR)/sources/voice_assistant.c \
+    $(APP_DIR)/sources/audio/audio_enhancement.c \
+    $(APP_DIR)/adapters/deepcraft/wrapper.c \
+    $(APP_DIR)/sources/transport/ipc.c \
+    $(APP_DIR)/sources/audio/pdm_mic.c \
+    $(APP_DIR)/sources/platform/profiler.c \
+    $(APP_DIR)/sources/platform/retarget_io_init.c \
+    $(APP_DIR)/sources/audio/voice_assistant.c \
     $(APP_DIR)/sources/bsp-cfg/cy_afe_configurator_settings.c \
     $(APP_DIR)/sources/bsp-cfg/cycfg.c \
     $(APP_DIR)/sources/bsp-cfg/cycfg_clocks.c \
@@ -344,10 +348,10 @@ APP_C_SRCS := \
 
 # VA model sources (project-specific)
 APP_C_SRCS += \
-    $(APP_DIR)/va_models/$(DEEPCRAFT_PROJECT)/$(DEEPCRAFT_PROJECT)_config.c \
-    $(APP_DIR)/va_models/$(DEEPCRAFT_PROJECT)/$(DEEPCRAFT_PROJECT)_ifx_va_config_prms.c \
-    $(APP_DIR)/va_models/$(DEEPCRAFT_PROJECT)/$(DEEPCRAFT_PROJECT)_U55_CMDmodel.c \
-    $(APP_DIR)/va_models/$(DEEPCRAFT_PROJECT)/$(DEEPCRAFT_PROJECT)_U55_WWmodel.c
+    $(DEEPCRAFT_VA_MODELS_DIR)/$(DEEPCRAFT_PROJECT)/$(DEEPCRAFT_PROJECT)_config.c \
+    $(DEEPCRAFT_VA_MODELS_DIR)/$(DEEPCRAFT_PROJECT)/$(DEEPCRAFT_PROJECT)_ifx_va_config_prms.c \
+    $(DEEPCRAFT_VA_MODELS_DIR)/$(DEEPCRAFT_PROJECT)/$(DEEPCRAFT_PROJECT)_U55_CMDmodel.c \
+    $(DEEPCRAFT_VA_MODELS_DIR)/$(DEEPCRAFT_PROJECT)/$(DEEPCRAFT_PROJECT)_U55_WWmodel.c
 
 ################################################################################
 # BSP source files
