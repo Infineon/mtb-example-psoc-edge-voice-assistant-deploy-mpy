@@ -241,8 +241,10 @@ INCLUDES := \
     -I$(APP_DIR)/includes \
     -I$(APP_DIR)/sources \
     -I$(APP_DIR)/sources/bsp-cfg \
-        -I$(APP_DIR)/adapters/deepcraft \
-        -I$(DEEPCRAFT_VA_MODELS_DIR)/$(DEEPCRAFT_PROJECT) \
+    -I$(APP_DIR)/adapters/deepcraft \
+    -I$(DEEPCRAFT_FRAMEWORK_DIR) \
+    -I$(DEEPCRAFT_FRAMEWORK_DIR)/audio \
+    -I$(DEEPCRAFT_VA_MODELS_DIR)/$(DEEPCRAFT_PROJECT) \
     -I$(SHARED_DIR)/include \
     -I$(DEEPCRAFT_DIR) \
     \
@@ -331,7 +333,7 @@ APP_C_SRCS := \
     $(APP_DIR)/sources/audio/pdm_mic.c \
     $(APP_DIR)/sources/platform/profiler.c \
     $(APP_DIR)/sources/platform/retarget_io_init.c \
-    $(APP_DIR)/sources/audio/voice_assistant.c \
+    $(DEEPCRAFT_FRAMEWORK_DIR)/audio/voice_assistant.c \
     $(APP_DIR)/sources/bsp-cfg/cy_afe_configurator_settings.c \
     $(APP_DIR)/sources/bsp-cfg/cycfg.c \
     $(APP_DIR)/sources/bsp-cfg/cycfg_clocks.c \
