@@ -1,15 +1,7 @@
 /*
- * main.c — Target-side Voice Assistant application.
- *
- * Application code only.  No transport, IPC, or protocol constants appear here.
- * All DeepCraft model interface calls go through wrapper.h:
- *   deepcraft_wrapper_init()       — boot-time setup
- *   deepcraft_wrapper_notify_*()   — report VA events to the host
- *
- * Transport is selected in adapters/deepcraft/wrapper.c.
- *
- * Copyright (c) 2026 Infineon Technologies AG
- * SPDX-License-Identifier: MIT
+ * DeepCraft framework entrypoint.
+ * This file owns the model-specific VA lifecycle and uses the generic
+ * top-level main.c for common board initialization only.
  */
 
 #include "cybsp.h"
@@ -28,34 +20,21 @@
 #include MTB_WWD_NLU_APP_HEADER(PROJECT_PREFIX)
 #include MTB_WWD_NLU_CONFIG_HEADER(PROJECT_PREFIX)
 
-/* DeepCraft model interface — the only DeepCraft header main.c needs */
 #include "wrapper.h"
 
-/*******************************************************************************
- * Macros
- ******************************************************************************/
 #define VA_TASK_NAME         ("va-task")
 #define VA_TASK_STACK_SIZE   (10 * 1024)
 #define VA_TASK_PRIORITY     (CY_RTOS_PRIORITY_NORMAL)
 #define COMMAND_STRING_SIZE  (250U)
 #define CMD_TIMEOUT_MS       (5000U)
 
-/*******************************************************************************
- * Module state
- ******************************************************************************/
 static volatile bool g_va_enabled  = false;
 static TaskHandle_t  g_va_task_hdl = NULL;
 static ipc_interface_t g_ipc_interface;
 
-/* Required by audio-voice-core */
 uint8_t  bf_coeffs[1];
 uint32_t bf_coeffs_total_len;
 
-/*******************************************************************************
- * DeepCraft lifecycle callbacks
- * Called from interrupt context by the interface layer when the host sends
- * a START or STOP command.  Keep them minimal.
- ******************************************************************************/
 static void on_va_start(void)
 {
     g_va_enabled = true;
@@ -73,10 +52,6 @@ static void on_va_stop(void)
     deepcraft_wrapper_notify_stopped();
 }
 
-/*******************************************************************************
- * run_va_process
- * Process one audio frame and notify the host of any detected VA events.
- ******************************************************************************/
 static void run_va_process(int16_t *audio_frame)
 {
     va_rslt_t  va_result;
@@ -114,12 +89,6 @@ static void run_va_process(int16_t *audio_frame)
     }
 }
 
-/*******************************************************************************
- * voice_assistant_task
- * FreeRTOS task.  Initialises the VA library, signals ready to the host, then
- * processes audio frames in a loop.
- * Created suspended; resumed by on_va_start() when the host sends START.
- ******************************************************************************/
 static void voice_assistant_task(void *arg)
 {
     (void)arg;
@@ -159,7 +128,6 @@ static void voice_assistant_task(void *arg)
             deepcraft_wrapper_notify_error();
             handle_error();
         }
-        /* Output is delivered asynchronously via audio_enhancement_process_output() callback */
 #else
         run_va_process(audio_frame);
 #endif
@@ -167,23 +135,16 @@ static void voice_assistant_task(void *arg)
 }
 
 #ifdef USE_AUDIO_ENHANCEMENT
-/* AFE output callback — feeds enhanced audio directly into the VA pipeline */
 void audio_enhancement_process_output(ae_buffer_info_t *output_buffer)
 {
     run_va_process(output_buffer->output_buf);
 }
 #endif
 
-/*******************************************************************************
- * main
- ******************************************************************************/
 int main(void)
 {
-    cy_rslt_t result;
-
-    result = cybsp_init();
+    cy_rslt_t result = cybsp_init();
     CY_ASSERT(result == CY_RSLT_SUCCESS);
-
     __enable_irq();
 
     /* Initialise the DeepCraft model interface (transport configured inside) */
@@ -209,6 +170,3 @@ int main(void)
     CY_ASSERT(false);
     return 0;
 }
-
-/* [] END OF FILE */
-
