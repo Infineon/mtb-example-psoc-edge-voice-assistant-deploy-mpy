@@ -26,6 +26,7 @@ import argparse
 import configparser
 import multiprocessing
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -65,8 +66,21 @@ _OCD_BASE_NAME      = f"openocd-{_OCD_VERSION_STR}-"
 _OCD_URL_BASE       = f"https://github.com/Infineon/openocd/releases/download/{_OCD_VERSION_TAG}/"
 _OCD_SUPPORTED_VERS = ["0.12.0+dev-5.8.0.3960", "0.12.0+dev-5.11.0.4042", "0.12.0+dev-5.12.0.4170"]
 _LLVM_VERSION = "19.1.5"
-_LLVM_BASE_NAME = f"LLVM-ET-Arm-{_LLVM_VERSION}-Windows-x86_64"
-_LLVM_DOWNLOAD_URL = f"https://github.com/ARM-software/LLVM-embedded-toolchain-for-Arm/releases/download/release-{_LLVM_VERSION}/{_LLVM_BASE_NAME}.zip"
+
+def _llvm_platform_asset():
+    """Return (base_name, archive_ext) for the current OS/CPU."""
+    machine = platform.machine().lower()
+    if _WIN:
+        return f"LLVM-ET-Arm-{_LLVM_VERSION}-Windows-x86_64", "zip"
+    if sys.platform == "darwin":
+        # macOS ships only a .dmg installer, which this script cannot auto-extract.
+        return f"LLVM-ET-Arm-{_LLVM_VERSION}-Darwin-universal", "dmg"
+    if machine in ("aarch64", "arm64"):
+        return f"LLVM-ET-Arm-{_LLVM_VERSION}-Linux-AArch64", "tar.xz"
+    return f"LLVM-ET-Arm-{_LLVM_VERSION}-Linux-x86_64", "tar.xz"
+
+_LLVM_BASE_NAME, _LLVM_ARCHIVE_EXT = _llvm_platform_asset()
+_LLVM_DOWNLOAD_URL = f"https://github.com/ARM-software/LLVM-embedded-toolchain-for-Arm/releases/download/release-{_LLVM_VERSION}/{_LLVM_BASE_NAME}.{_LLVM_ARCHIVE_EXT}"
 _LLVM_INSTALL_SUBDIR = "llvm"  # subfolder under the deps dir
 def _llvm_install_dir():
     return os.path.join(_DEPS_DIR, _LLVM_INSTALL_SUBDIR)
@@ -116,7 +130,7 @@ def _prompt_text(question):
     return input(f"{question}: ").strip().strip('"')
 
 def _prompt_llvm_dir():
-    raw = _prompt_text("Enter LLVM install path (for example C:\\llvm\\LLVM-ET-Arm-19.1.5-Windows-x86_64)")
+    raw = _prompt_text(f"Enter LLVM install path (for example a folder ending in {_LLVM_BASE_NAME})")
     if not raw:
         return None
     candidate = os.path.abspath(raw)
@@ -170,13 +184,23 @@ def _unique_install_dir(base_name):
 
 def _install_llvm():
     """Download, extract, and install the LLVM toolchain under the deps dir."""
+    if _LLVM_ARCHIVE_EXT == "dmg":
+        _fatal(
+            "Automatic LLVM install is not supported on macOS.\n"
+            f"Please download and mount {_LLVM_BASE_NAME}.dmg manually, then set the\n"
+            "LLVM install path via [tools] llvm_dir in the .ini file or the prompt."
+        )
     llvm_root = _llvm_install_dir()
-    archive = os.path.join(_DEPS_DIR, f"{_LLVM_BASE_NAME}.zip")
+    archive = os.path.join(_DEPS_DIR, f"{_LLVM_BASE_NAME}.{_LLVM_ARCHIVE_EXT}")
     _download_file(_LLVM_DOWNLOAD_URL, archive)
     print_f("[dc-va] Extracting LLVM ...")
     os.makedirs(llvm_root, exist_ok=True)
-    with zipfile.ZipFile(archive) as zf:
-        zf.extractall(llvm_root)
+    if _LLVM_ARCHIVE_EXT == "zip":
+        with zipfile.ZipFile(archive) as zf:
+            zf.extractall(llvm_root)
+    else:
+        with tarfile.open(archive, "r:xz") as tf:
+            tf.extractall(llvm_root)
     os.remove(archive)
     llvm_path = os.path.join(llvm_root, _LLVM_BASE_NAME)
     if not os.path.isdir(llvm_path):
