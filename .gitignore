@@ -155,3 +155,6 @@ ehthumbs_vista.db
 *.timestamp
 design.cyqspi.memory-export
 deps/assetlocks.json
+
+# Voice-assistant deploy tool working directory
+tools/va-mpy/
