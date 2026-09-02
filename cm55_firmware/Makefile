@@ -29,12 +29,7 @@ all: framework
 build: framework
 
 framework:
-	@if [ ! -d "$(FRAMEWORK_DIR)" ]; then \
-		echo "Unknown framework: $(FRAMEWORK)"; \
-		echo "Available frameworks:"; \
-		find $(APP_DIR)/framework -mindepth 1 -maxdepth 1 -type d -printf '  %f\n'; \
-		exit 1; \
-	fi
+	$(if $(wildcard $(FRAMEWORK_DIR)),,$(error Unknown framework: $(FRAMEWORK). Available frameworks: $(notdir $(wildcard $(APP_DIR)/framework/*))))
 	$(MAKE) -C $(FRAMEWORK_DIR) -f Makefile \
 		APPNAME=$(APPNAME) \
 		CONFIG=$(CONFIG) \
@@ -44,9 +39,7 @@ framework:
 		FRAMEWORK=$(FRAMEWORK)
 
 clean:
-	@if [ ! -d "$(FRAMEWORK_DIR)" ]; then \
-		echo "Unknown framework: $(FRAMEWORK)"; exit 1; \
-	fi
+	$(if $(wildcard $(FRAMEWORK_DIR)),,$(error Unknown framework: $(FRAMEWORK). Available frameworks: $(notdir $(wildcard $(APP_DIR)/framework/*))))
 	$(MAKE) -C $(FRAMEWORK_DIR) -f Makefile clean \
 		APPNAME=$(APPNAME) \
 		CONFIG=$(CONFIG) \
@@ -56,9 +49,7 @@ clean:
 		FRAMEWORK=$(FRAMEWORK)
 
 flash deploy:
-	@if [ ! -d "$(FRAMEWORK_DIR)" ]; then \
-		echo "Unknown framework: $(FRAMEWORK)"; exit 1; \
-	fi
+	$(if $(wildcard $(FRAMEWORK_DIR)),,$(error Unknown framework: $(FRAMEWORK). Available frameworks: $(notdir $(wildcard $(APP_DIR)/framework/*))))
 	$(MAKE) -C $(FRAMEWORK_DIR) -f Makefile deploy \
 		APPNAME=$(APPNAME) \
 		CONFIG=$(CONFIG) \
