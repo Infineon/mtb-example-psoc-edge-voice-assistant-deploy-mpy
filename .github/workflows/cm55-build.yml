@@ -1,0 +1,51 @@
+name: cm55-build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Build — runs on a cloud runner inside the Docker image
+  # ─────────────────────────────────────────────────────────────────────────
+  build:
+    runs-on: ubuntu-24.04
+    env:
+      TOOLCHAIN_IMAGE: ifxmakers/psoc-embedded-ai-toolchain:deepcraft-0.1.0
+
+    strategy:
+      matrix:
+        config: [Debug]
+        framework: [deepcraft]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Pull toolchain image
+        run: docker pull ${{ env.TOOLCHAIN_IMAGE }}
+
+      - name: Build firmware
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -e FRAMEWORK=${{ matrix.framework }} \
+            -e PROJECT_SUBDIR=cm55_firmware \
+            ${{ env.TOOLCHAIN_IMAGE }} \
+            make CONFIG=${{ matrix.config }} FRAMEWORK=${{ matrix.framework }}
+
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.framework }}-${{ matrix.config }}
+          path: |
+            cm55_firmware/build/${{ matrix.config }}/cm55_firmware.elf
+            cm55_firmware/build/${{ matrix.config }}/cm55_firmware.hex
+            cm55_firmware/build/${{ matrix.config }}/cm55_firmware.bin
