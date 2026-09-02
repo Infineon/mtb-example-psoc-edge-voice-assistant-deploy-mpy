@@ -42,7 +42,7 @@ except ImportError:
 
 # ---------------------------------------------------------------------------
 VERSION  = "0.1.1"
-REPO_URL = "https://github.com/Infineon/mtb-example-psoc-edge-voice-assistant-deploy-mpy.git"
+REPO_URL = "https://github.com/Infineon/micropython-psoc-edge-ai-model.git"
 FIRMWARE_REL   = "cm55_firmware"
 VA_MODELS_REL  = os.path.join(FIRMWARE_REL, "framework", "deepcraft", "va_models")
 MAKEFILE       = "Makefile"
@@ -55,7 +55,7 @@ _DEPS_DIR_NAME      = "va-mpy"
 # Base directory for everything this script downloads/installs (repo clone,
 # toolchains and archives). Overridable via --deps-dir or [tools] deps_dir.
 _DEPS_DIR           = os.path.join(_SCRIPT_DIR, _DEPS_DIR_NAME)
-_REPO_FOLDER_NAME   = "mtb-example-psoc-edge-voice-assistant-deploy-mpy"
+_REPO_FOLDER_NAME   = "micropython-psoc-edge-ai-model"
 DEFAULT_REPO_DIR    = os.path.join(_DEPS_DIR, _REPO_FOLDER_NAME)
 _LOCAL_CONFIG_FILE  = os.path.join(_SCRIPT_DIR, "deepcraft-voice-assistant-model-deploy.ini")
 DEFAULT_CONFIG_FILE = _LOCAL_CONFIG_FILE if os.path.isfile(_LOCAL_CONFIG_FILE) else os.path.join(os.path.expanduser("~"), ".deepcraft-voice-assistant-model-deploy.ini")
