@@ -22,7 +22,7 @@ Download the tool into a local folder with ``curl``:
 
 .. code-block:: console
 
-   curl -s -L -o deepcraft-voice-assistant-model-deploy.py https://raw.githubusercontent.com/Infineon/mtb-example-psoc-edge-voice-assistant-deploy-mpy/main/tools/deepcraft-voice-assistant-model-deploy.py
+   curl -s -L -o deepcraft-voice-assistant-model-deploy.py https://raw.githubusercontent.com/Infineon/micropython-psoc-edge-ai-model/main/tools/deepcraft-voice-assistant-model-deploy.py
 
 ----
 

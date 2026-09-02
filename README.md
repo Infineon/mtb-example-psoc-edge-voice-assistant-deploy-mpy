@@ -1,6 +1,10 @@
-# DEEPCRAFT Voice Assistant Model Deploy
+# MicroPython PSOC™ Edge AI Model
 
-A single Python script that takes a [DEEPCRAFT™ Voice Assistant](https://deepcraft.infineon.com/solutions/voice-assistant) model and gets it running on a **PSOC™ Edge KIT_PSE84_AI** board — firmware is built and flashed in one command.
+This repo hosts MicroPython-based deployment enablements for running embedded AI models on **PSOC™ Edge** boards. It currently supports [DEEPCRAFT™ Voice Assistant](https://deepcraft.infineon.com/solutions/voice-assistant) models.
+
+## DEEPCRAFT™ Voice Assistant
+
+A single Python script that takes a DEEPCRAFT™ Voice Assistant model and gets it running on a **PSOC™ Edge KIT_PSE84_AI** board — firmware is built and flashed in one command.
 
 ---
 

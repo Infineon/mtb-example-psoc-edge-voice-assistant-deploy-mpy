@@ -23,7 +23,7 @@ The deploy tool and the firmware repository sit side-by-side:
    ├── deepcraft-voice-assistant-model-deploy.py   # deploy tool (clone / build / flash)
    ├── deepcraft-voice-assistant-model-deploy.ini  # config template
    │
-   └── mtb-example-psoc-edge-voice-assistant-deploy-mpy/
+   └── micropython-psoc-edge-ai-model/
        ├── proj_cm55/          # CM55 firmware source (C)
       │   ├── main.c
       │   ├── adapters/deepcraft/wrapper.c/.h
