@@ -38,6 +38,76 @@ Other commands:
 
 ---
 
+## Build Firmware
+
+Choose one of the following workflows.
+
+### Option 1: Clone On The Host
+
+Use this workflow when Git is installed on the host. Clone the firmware and
+open its root directory before running Docker.
+
+```sh
+git clone --recurse-submodules https://github.com/Infineon/mtb-example-psoc-edge-voice-assistant-deploy-mpy.git
+
+cd mtb-example-psoc-edge-voice-assistant-deploy-mpy
+```
+
+From this directory, which contains `cm55_firmware/`, run the following
+commands. Docker mounts the checkout at `/workspace`; `-w` selects the
+project's build directory inside it.
+
+WSL with docker installed:
+
+```sh
+docker run --rm \
+	-v "$PWD":/workspace \
+	-w /workspace/cm55_firmware \
+	ifxmakers/psoc-embedded-ai-toolchain:deepcraft-0.1.0 \
+	make CONFIG=Debug FRAMEWORK=deepcraft
+```
+
+### Option 2: Clone Inside Docker
+
+```sh
+mkdir firmware-build
+
+docker run --rm \
+	-v "$PWD/firmware-build":/workspace \
+	--entrypoint sh \
+	ifxmakers/psoc-embedded-ai-toolchain:deepcraft-0.1.0 \
+	-c 'git clone --recurse-submodules https://github.com/Infineon/mtb-example-psoc-edge-voice-assistant-deploy-mpy.git . &&
+	     cd cm55_firmware &&
+	     make CONFIG=Debug FRAMEWORK=deepcraft'
+```
+
+The checkout and build outputs remain in `firmware-build` after the container
+exits.
+
+## Flash Firmware
+
+The image includes Infineon's OpenOCD fork, which supports the KitProg3
+interface and PSE84 target configs.
+
+Flashing requires USB access to the board's debug probe, which build commands
+do not need. On Linux, pass the USB bus through explicitly:
+
+```sh
+docker run --rm \
+	--device=/dev/bus/usb \
+	-v "$PWD":/workspace \
+	-w /workspace/cm55_firmware \
+	ifxmakers/psoc-embedded-ai-toolchain:deepcraft-0.1.0 \
+	make CONFIG=Debug FRAMEWORK=deepcraft flash
+```
+
+On WSL, attach the debug probe to the WSL distribution first using
+[usbipd-win](https://github.com/dorssel/usbipd-win) before running the command
+above. Direct USB passthrough to Windows Docker Desktop containers is not
+generally supported.
+
+---
+
 ## Documentation
 
 | Guide | Contents |
