@@ -30,8 +30,7 @@ jobs:
         run: |
           docker run --rm \
             -v ${{ github.workspace }}:/workspace \
-            -e FRAMEWORK=${{ matrix.framework }} \
-            -e PROJECT_SUBDIR=cm55_firmware \
+            -w /workspace/cm55_firmware \
             ${{ env.TOOLCHAIN_IMAGE }} \
             make CONFIG=${{ matrix.config }} FRAMEWORK=${{ matrix.framework }}
 
