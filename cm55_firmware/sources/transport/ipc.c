@@ -15,6 +15,7 @@
 
 #include "ipc.h"
 #include "ipc_communication.h"   /* from shared/include — IPC pipe constants   */
+#include "ipc_ring.h"            /* shared SPSC byte-stream rings              */
 
 #include "cybsp.h"
 #include "cy_pdl.h"
@@ -31,6 +32,23 @@ CY_SECTION_SHAREDMEM static ipc_msg_t s_tx_msg;
 /* Singleton — static ISR trampoline needs to reach the instance             */
 static ipc_interface_t *s_iface = NULL;
 
+/* Bulk-data receive sink (host -> target ring). NULL = drain and discard.   */
+static void (*s_on_data)(const uint8_t *data, size_t len) = NULL;
+
+/* Scratch buffer for draining the inbound ring inside the pipe ISR.         */
+static uint8_t s_rx_scratch[IPC_RING_CAPACITY];
+
+/* Drain the host -> target ring, handing each chunk to the data sink.       */
+static void ipc_drain_rx_ring(void)
+{
+    size_t n;
+    while ((n = ipc_ring_read(IPC_RING_HOST_TO_TARGET, s_rx_scratch, sizeof(s_rx_scratch))) > 0U) {
+        if (s_on_data != NULL) {
+            s_on_data(s_rx_scratch, n);
+        }
+    }
+}
+
 /* Application-level start / stop callbacks, set during init                 */
 /* IPC pipe ISR trampoline — called by the PDL pipe driver */
 static void ipc_rx_callback(uint32_t *msg_data)
@@ -39,6 +57,10 @@ static void ipc_rx_callback(uint32_t *msg_data)
         return;
     }
     const ipc_msg_t *msg = (const ipc_msg_t *)msg_data;
+    if (msg->cmd == IPC_CMD_DATA_AVAIL) {
+        ipc_drain_rx_ring();
+        return;
+    }
     if (s_iface->on_receive != NULL) {
         s_iface->on_receive(msg->cmd, msg->value);
     }
@@ -93,11 +115,32 @@ void ipc_interface_init(ipc_interface_t *self)
 
     s_iface = self;
 
+    /* CM55 owns the target -> host ring (m55_allocatable_shared).           */
+    ipc_ring_init(IPC_RING_TARGET_TO_HOST);
+
     /* Platform-specific IPC pipe setup (defined in shared/source) */
     cm55_ipc_communication_setup();
 
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
- * Notify helpers — send VA model events to the host
+ * Bulk data transfer — target -> host byte stream
  * ═══════════════════════════════════════════════════════════════════════════ */
+void ipc_interface_set_data_cb(void (*cb)(const uint8_t *data, size_t len))
+{
+    s_on_data = cb;
+}
+
+size_t ipc_interface_send_data(const uint8_t *data, size_t len)
+{
+    if (data == NULL || len == 0U || s_iface == NULL) {
+        return 0U;
+    }
+    size_t written = ipc_ring_write(IPC_RING_TARGET_TO_HOST, data, len);
+    if (written > 0U) {
+        /* Doorbell — reuse the vtable send (pipe-busy retry lives inside).  */
+        s_iface->base.send(&s_iface->base, IPC_CMD_DATA_AVAIL,
+            IPC_RING_TARGET_TO_HOST->head);
+    }
+    return written;
+}
