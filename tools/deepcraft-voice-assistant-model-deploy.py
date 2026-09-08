@@ -502,6 +502,11 @@ def run_make_target(*, firmware_dir, make_cmd, target, llvm_dir=None, jobs=None,
     cmd = [make_cmd, "-f", MAKEFILE, target]
     if jobs:
         cmd += ["-j", str(jobs)]
+    if _WIN:
+        # mingw32-make auto-detects any sh.exe/bash.exe on PATH (e.g. Git for Windows)
+        # and switches recipes to POSIX shell, breaking the Makefile's "if not exist ..."
+        # batch commands. Force cmd.exe explicitly to override that auto-detection.
+        cmd.append("SHELL=cmd.exe")
     if var_map:
         for key, value in var_map.items():
             if value is not None and str(value) != "":
@@ -558,7 +563,15 @@ def ensure_local_config_from_repo(repo_dir):
     if not os.path.isfile(src_cfg):
         return
     try:
-        shutil.copy2(src_cfg, _LOCAL_CONFIG_FILE)
+        template_cfg = configparser.ConfigParser()
+        template_cfg.read(src_cfg)
+        # The template's `repo_dir = ..` only makes sense when the script lives
+        # inside the cloned repo's tools/ folder. For this standalone copy the
+        # repo is auto-cloned under the deps dir, so drop it to use that default.
+        if template_cfg.has_option("project", "repo_dir"):
+            template_cfg.remove_option("project", "repo_dir")
+        with open(_LOCAL_CONFIG_FILE, "w", encoding="utf-8") as fh:
+            template_cfg.write(fh)
         print_f(f"[dc-va] Copied config template to: {_LOCAL_CONFIG_FILE}")
     except Exception as e:
         print_f(f"[dc-va] WARNING: Could not copy config template: {e}")
@@ -579,9 +592,17 @@ def _zip_top_dir(zip_path):
     return tops.pop() if len(tops) == 1 else None
 
 def install_model(model_path, va_models_dir, force=False):
+    requested_path = model_path
     model_path = os.path.abspath(model_path)
     if not os.path.exists(model_path):
-        _fatal(f"Model path does not exist: {model_path}")
+        # Allow the bundled model to be selected by name, as documented.
+        bundled_model = os.path.join(va_models_dir, requested_path)
+        if (not os.path.isabs(requested_path)
+                and os.path.dirname(requested_path) == ""
+                and os.path.isdir(bundled_model)):
+            model_path = bundled_model
+        else:
+            _fatal(f"Model path does not exist: {model_path}")
     is_zip = os.path.isfile(model_path) and zipfile.is_zipfile(model_path)
     raw_name = (_zip_top_dir(model_path) or _project_name(model_path)) if is_zip else _project_name(model_path)
     project_name = _strip_timestamp(raw_name)
