@@ -176,9 +176,3 @@ generally supported.
 | [Deployment Tool](https://mpy-va-deploy.readthedocs.io/en/latest/deployment_tool.html) | Installation, commands, options, config file |
 | [Requirements](https://mpy-va-deploy.readthedocs.io/en/latest/requirements.html) | Hardware, toolchain, and software prerequisites |
 | [MicroPython Interface](https://github.com/Infineon/micropython-deepcraft-model-interface) | CM33-side MicroPython API |
-
----
-
-## Version
-
-`deepcraft-voice-assistant-model-deploy.py` v0.1.1
