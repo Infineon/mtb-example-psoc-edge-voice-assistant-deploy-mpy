@@ -181,4 +181,4 @@ generally supported.
 
 ## Version
 
-`deepcraft-voice-assistant-model-deploy.py` v1.0.0
+`deepcraft-voice-assistant-model-deploy.py` v0.1.1
