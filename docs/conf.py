@@ -27,3 +27,4 @@ html_static_path = ["_static"]
 # Mermaid: render diagrams client-side (no external server needed)
 mermaid_output_format = "raw"
 mermaid_version = "10.9.0"
+
