@@ -11,7 +11,7 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     env:
-      TOOLCHAIN_IMAGE: ifxmakers/psoc-embedded-ai-toolchain:deepcraft-0.1.0
+      TOOLCHAIN_IMAGE: ifxmakers/psoc-embedded-ai-toolchain:deepcraft-latest
 
     strategy:
       matrix:
@@ -52,7 +52,7 @@ jobs:
   test-deploy-utility:
     runs-on: ubuntu-24.04
     env:
-      TOOLCHAIN_IMAGE: ifxmakers/psoc-embedded-ai-toolchain:deepcraft-0.1.0
+      TOOLCHAIN_IMAGE: ifxmakers/psoc-embedded-ai-toolchain:deepcraft-latest
 
     steps:
       - uses: actions/checkout@v7
