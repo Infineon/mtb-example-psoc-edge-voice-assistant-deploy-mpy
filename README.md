@@ -10,6 +10,12 @@ A single Python script that takes a DEEPCRAFT™ Voice Assistant model and gets 
 
 ## Setup
 
+From the repository root, switch to the `tools/` folder where the deploy script and its config template live:
+
+```powershell
+cd tools
+```
+
 Set your LLVM toolchain path in `deepcraft-voice-assistant-model-deploy.ini`:
 
 ```ini
@@ -17,7 +23,7 @@ Set your LLVM toolchain path in `deepcraft-voice-assistant-model-deploy.ini`:
 llvm_dir = C:/llvm/LLVM-ET-Arm-19.1.5-Windows-x86_64
 ```
 
-That's the only required config. OpenOCD is downloaded automatically if not found.
+This avoids the interactive LLVM setup prompt. OpenOCD is downloaded automatically if not found.
 
 ---
 
@@ -40,6 +46,56 @@ Other commands:
 | `flash` | Flash the last built `.hex` |
 | `clean` | Remove build artifacts for a clean rebuild |
 
+### For primary users
+
+You don't need a full checkout of this repo — just download the script itself:
+
+```powershell
+curl -s -L -o deepcraft-voice-assistant-model-deploy.py https://raw.githubusercontent.com/Infineon/micropython-psoc-edge-ai-model/main/tools/deepcraft-voice-assistant-model-deploy.py
+```
+
+Leave `repo_dir` blank in the config file (the default). The tool then manages its
+own private copy of the firmware — cloning it under `va-mpy/` next to the script
+on first run and updating it on later runs — so your model builds against a
+known-good checkout regardless of what else is on disk.
+
+Once `build` or `all` has finished, flash the board (`all` already does this for you):
+
+```powershell
+python deepcraft-voice-assistant-model-deploy.py all <model-name>
+```
+
+### For secondary users (firmware / script contributors)
+
+Clone the full repo instead of just the script, so you have `cm55_firmware/` and
+`tools/` to edit:
+
+```sh
+git clone --recurse-submodules https://github.com/Infineon/micropython-psoc-edge-ai-model.git
+
+cd micropython-psoc-edge-ai-model/tools
+```
+
+Then point the tool at this checkout instead of letting it manage a separate copy,
+so your local changes are picked up immediately without pushing or re-cloning:
+
+```ini
+[project]
+repo_dir = ..
+```
+
+Or, without touching the config file:
+
+```powershell
+python deepcraft-voice-assistant-model-deploy.py \
+    --repo-dir .. \
+    --config-file deepcraft-voice-assistant-model-deploy.ini \
+    build test_gpio_control
+```
+
+`--repo-dir` skips the clone/update step entirely and builds `cm55_firmware/` as it
+sits in your working tree, so re-running `build` after an edit picks it up right away.
+
 ---
 
 ## Build Firmware
@@ -52,9 +108,9 @@ Use this workflow when Git is installed on the host. Clone the firmware and
 open its root directory before running Docker.
 
 ```sh
-git clone --recurse-submodules https://github.com/Infineon/mtb-example-psoc-edge-voice-assistant-deploy-mpy.git
+git clone --recurse-submodules https://github.com/Infineon/micropython-psoc-edge-ai-model.git
 
-cd mtb-example-psoc-edge-voice-assistant-deploy-mpy
+cd micropython-psoc-edge-ai-model
 ```
 
 From this directory, which contains `cm55_firmware/`, run the following
@@ -80,7 +136,7 @@ docker run --rm \
 	-v "$PWD/firmware-build":/workspace \
 	--entrypoint sh \
 	ifxmakers/psoc-embedded-ai-toolchain:deepcraft-0.1.0 \
-	-c 'git clone --recurse-submodules https://github.com/Infineon/mtb-example-psoc-edge-voice-assistant-deploy-mpy.git . &&
+	-c 'git clone --recurse-submodules https://github.com/Infineon/micropython-psoc-edge-ai-model.git . &&
 	     cd cm55_firmware &&
 	     make CONFIG=Debug FRAMEWORK=deepcraft'
 ```
