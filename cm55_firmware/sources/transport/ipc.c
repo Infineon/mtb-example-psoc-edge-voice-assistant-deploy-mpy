@@ -14,16 +14,34 @@
  */
 
 #include "ipc.h"
-#include "ipc_communication.h"   /* from shared/include — IPC pipe constants   */
-#include "ipc_ring.h"            /* shared SPSC byte-stream rings              */
+#include "ipc_communication.h"
+#include "ipc_ring.h"
 
 #include "cybsp.h"
 #include "cy_pdl.h"
 #include "cy_ipc_pipe.h"
 
 /* ── Tunable send parameters ─────────────────────────────────────────────── */
-#define IPC_SEND_MAX_RETRIES     (200U)
+#define IPC_SEND_MAX_RETRIES     (100U)
 #define IPC_SEND_RETRY_DELAY_US  (1000U)
+
+/* Back-pressure while streaming the target -> host ring: when the ring is full
+ * we wait for the host to drain before writing the remainder, bounded by a
+ * timeout (MAX_SPINS * DELAY_US). */
+#define IPC_TX_BACKPRESSURE_MAX_SPINS  (1000U)
+#define IPC_TX_BACKPRESSURE_DELAY_US   (100U)
+
+/* Host -> target drain chunk = size of the s_rx_scratch staging buffer.
+ * Configurable and decoupled from the ring: the ring is drained IPC_H2T_CHUNK
+ * bytes at a time and each chunk handed to the data sink, so a payload larger
+ * than this chunk (or than the ring) is received losslessly in pieces.
+ * Currently 64 KB (matches the ring); reduce if CM55 SRAM gets tight. */
+#define IPC_H2T_CHUNK  (65536u)
+
+/* Back-pressure while draining the host -> target ring: when the announced
+ * total is not all in the ring yet, wait (bounded) for CM33 to write more. */
+#define IPC_RX_BACKPRESSURE_MAX_SPINS  (1000U)
+#define IPC_RX_BACKPRESSURE_DELAY_US   (100U)
 
 /* ── Shared TX buffer ────────────────────────────────────────────────────── */
 /* Must reside in IPC-visible SRAM so both processors can access it.         */
@@ -35,17 +53,36 @@ static ipc_interface_t *s_iface = NULL;
 /* Bulk-data receive sink (host -> target ring). NULL = drain and discard.   */
 static void (*s_on_data)(const uint8_t *data, size_t len) = NULL;
 
-/* Scratch buffer for draining the inbound ring inside the pipe ISR.         */
-static uint8_t s_rx_scratch[IPC_RING_CAPACITY];
+/* Scratch buffer for draining the inbound (host -> target) ring inside the
+ * pipe ISR; sized to the configurable drain chunk (IPC_H2T_CHUNK).          */
+static uint8_t s_rx_scratch[IPC_H2T_CHUNK];
 
-/* Drain the host -> target ring, handing each chunk to the data sink.       */
-static void ipc_drain_rx_ring(void)
+/* Drain `total` bytes from the host -> target ring, handing them to the data
+ * sink in <= IPC_H2T_CHUNK pieces. `total` may exceed the ring: CM33 streams
+ * with back-pressure, so we consume what is present, deliver it, and wait
+ * (bounded) for more. Runs in the pipe ISR.                                  */
+static void ipc_drain_rx_ring(size_t total)
 {
-    size_t n;
-    while ((n = ipc_ring_read(IPC_RING_HOST_TO_TARGET, s_rx_scratch, sizeof(s_rx_scratch))) > 0U) {
-        if (s_on_data != NULL) {
-            s_on_data(s_rx_scratch, n);
+    size_t consumed = 0U;
+    uint32_t spins = 0U;
+    while (consumed < total) {
+        size_t want = total - consumed;
+        if (want > sizeof(s_rx_scratch)) {
+            want = sizeof(s_rx_scratch);
         }
+        size_t n = ipc_ring_read(IPC_RING_HOST_TO_TARGET, s_rx_scratch, want);
+        if (n > 0U) {
+            if (s_on_data != NULL) {
+                s_on_data(s_rx_scratch, n);
+            }
+            consumed += n;
+            spins = 0U;
+            continue;
+        }
+        if (++spins > IPC_RX_BACKPRESSURE_MAX_SPINS) {
+            break;                       /* producer stalled: bail (partial) */
+        }
+        Cy_SysLib_DelayUs(IPC_RX_BACKPRESSURE_DELAY_US);
     }
 }
 
@@ -58,7 +95,7 @@ static void ipc_rx_callback(uint32_t *msg_data)
     }
     const ipc_msg_t *msg = (const ipc_msg_t *)msg_data;
     if (msg->cmd == IPC_CMD_DATA_AVAIL) {
-        ipc_drain_rx_ring();
+        ipc_drain_rx_ring(msg->value);
         return;
     }
     if (s_iface->on_receive != NULL) {
@@ -115,8 +152,8 @@ void ipc_interface_init(ipc_interface_t *self)
 
     s_iface = self;
 
-    /* CM55 owns the target -> host ring (m55_allocatable_shared).           */
-    ipc_ring_init(IPC_RING_TARGET_TO_HOST);
+    /* CM55 owns the target -> host ring (m33_m55_shared SOCMEM region).     */
+    ipc_ring_init(IPC_RING_TARGET_TO_HOST, IPC_RING_T2H_CAPACITY);
 
     /* Platform-specific IPC pipe setup (defined in shared/source) */
     cm55_ipc_communication_setup();
@@ -136,11 +173,27 @@ size_t ipc_interface_send_data(const uint8_t *data, size_t len)
     if (data == NULL || len == 0U || s_iface == NULL) {
         return 0U;
     }
-    size_t written = ipc_ring_write(IPC_RING_TARGET_TO_HOST, data, len);
-    if (written > 0U) {
-        /* Doorbell — reuse the vtable send (pipe-busy retry lives inside).  */
-        s_iface->base.send(&s_iface->base, IPC_CMD_DATA_AVAIL,
-            IPC_RING_TARGET_TO_HOST->head);
+
+    /* Announce the total length up front so the host starts draining while we
+     * stream; this is what lets back-pressure work when len exceeds the ring. */
+    s_iface->base.send(&s_iface->base, IPC_CMD_DATA_AVAIL, (uint32_t)len);
+
+    /* Write losslessly: append whatever fits, then block (bounded) for the
+     * host to free space, until every byte is in the ring. Runs in the pipe
+     * ISR (via the data sink), so the wait is capped by a timeout.           */
+    size_t sent = 0U;
+    uint32_t spins = 0U;
+    while (sent < len) {
+        size_t n = ipc_ring_write(IPC_RING_TARGET_TO_HOST, data + sent, len - sent);
+        if (n > 0U) {
+            sent += n;
+            spins = 0U;
+            continue;
+        }
+        if (++spins > IPC_TX_BACKPRESSURE_MAX_SPINS) {
+            break;                       /* host stalled: give up (partial) */
+        }
+        Cy_SysLib_DelayUs(IPC_TX_BACKPRESSURE_DELAY_US);
     }
-    return written;
+    return sent;
 }
