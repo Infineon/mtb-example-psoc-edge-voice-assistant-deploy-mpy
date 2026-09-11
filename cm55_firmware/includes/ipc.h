@@ -42,6 +42,12 @@ typedef struct {
  */
 void ipc_interface_init(ipc_interface_t *self);
 
+/* Register the FreeRTOS task that processes deferred bulk-data notifications. */
+void ipc_interface_set_process_task(void *task_handle);
+
+/* Process any pending IPC events. Must be called from the task registered via ipc_interface_set_process_task(). */
+void ipc_interface_process(void);
+
 /* ── Bulk data transfer (target -> host byte stream) ─────────────────────── */
 /*
  * ipc_interface_send_data — append bytes to the target->host ring and ring the
@@ -52,8 +58,8 @@ size_t ipc_interface_send_data(const uint8_t *data, size_t len);
 
 /*
  * ipc_interface_set_data_cb — register a sink for host->target bulk data.
- * Invoked from IPC pipe ISR context; keep the implementation minimal. Pass NULL
- * to drain-and-discard.
+ * Invoked from ipc_interface_process() task context. Pass NULL to
+ * drain-and-discard.
  */
 void ipc_interface_set_data_cb(void (*cb)(const uint8_t *data, size_t len));
 

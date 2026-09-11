@@ -20,6 +20,8 @@
 #include "cybsp.h"
 #include "cy_pdl.h"
 #include "cy_ipc_pipe.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 /* ── Tunable send parameters ─────────────────────────────────────────────── */
 #define IPC_SEND_MAX_RETRIES     (100U)
@@ -49,6 +51,8 @@ CY_SECTION_SHAREDMEM static ipc_msg_t s_tx_msg;
 
 /* Singleton — static ISR trampoline needs to reach the instance             */
 static ipc_interface_t *s_iface = NULL;
+static volatile size_t s_pending_rx_length;
+static TaskHandle_t s_process_task = NULL;
 
 /* Bulk-data receive sink (host -> target ring). NULL = drain and discard.   */
 static void (*s_on_data)(const uint8_t *data, size_t len) = NULL;
@@ -60,7 +64,8 @@ static uint8_t s_rx_scratch[IPC_H2T_CHUNK];
 /* Drain `total` bytes from the host -> target ring, handing them to the data
  * sink in <= IPC_H2T_CHUNK pieces. `total` may exceed the ring: CM33 streams
  * with back-pressure, so we consume what is present, deliver it, and wait
- * (bounded) for more. Runs in the pipe ISR.                                  */
+ * (bounded) for more. This runs from ipc_interface_process(), outside the
+ * pipe ISR, so a large transfer cannot hold the IPC channel busy.             */
 static void ipc_drain_rx_ring(size_t total)
 {
     size_t consumed = 0U;
@@ -95,7 +100,13 @@ static void ipc_rx_callback(uint32_t *msg_data)
     }
     const ipc_msg_t *msg = (const ipc_msg_t *)msg_data;
     if (msg->cmd == IPC_CMD_DATA_AVAIL) {
-        ipc_drain_rx_ring(msg->value);
+        s_pending_rx_length = msg->value;
+        if (s_process_task != NULL) {
+            BaseType_t higher_priority_task_woken = pdFALSE;
+            xTaskNotifyFromISR(s_process_task, 0U, eNoAction,
+                &higher_priority_task_woken);
+            portYIELD_FROM_ISR(higher_priority_task_woken);
+        }
         return;
     }
     if (s_iface->on_receive != NULL) {
@@ -160,12 +171,27 @@ void ipc_interface_init(ipc_interface_t *self)
 
 }
 
+void ipc_interface_set_process_task(void *task_handle)
+{
+    s_process_task = (TaskHandle_t)task_handle;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
  * Bulk data transfer — target -> host byte stream
  * ═══════════════════════════════════════════════════════════════════════════ */
 void ipc_interface_set_data_cb(void (*cb)(const uint8_t *data, size_t len))
 {
     s_on_data = cb;
+}
+
+void ipc_interface_process(void)
+{
+    size_t total = s_pending_rx_length;
+    if (total == 0U) {
+        return;
+    }
+    s_pending_rx_length = 0U;
+    ipc_drain_rx_ring(total);
 }
 
 size_t ipc_interface_send_data(const uint8_t *data, size_t len)
@@ -179,8 +205,7 @@ size_t ipc_interface_send_data(const uint8_t *data, size_t len)
     s_iface->base.send(&s_iface->base, IPC_CMD_DATA_AVAIL, (uint32_t)len);
 
     /* Write losslessly: append whatever fits, then block (bounded) for the
-     * host to free space, until every byte is in the ring. Runs in the pipe
-     * ISR (via the data sink), so the wait is capped by a timeout.           */
+     * host to free space, until every byte is in the ring.                 */
     size_t sent = 0U;
     uint32_t spins = 0U;
     while (sent < len) {
